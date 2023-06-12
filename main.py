@@ -33,7 +33,7 @@ def handle_message_events(body, logger):
     question = str(body["event"]["text"]).split(">")[1]
 
     # Let the user know that we are busy with the request
-    response = client.chat_postMessage(channel=body["event"]["channel"],
+    client.chat_postMessage(channel=body["event"]["channel"],
                                        thread_ts=body["event"]["event_ts"],
                                        text=f"Hello from MLOpsFAQ Bot! :robot_face: \n"
                                             "Please note that this is an alpha version "
@@ -42,28 +42,6 @@ def handle_message_events(body, logger):
                                             "document that can be found in the "
                                             "<https://docs.google.com/document/d/12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d|following link>"
                                             "\nThanks for your request, I'm on it!")
-
-    # Check ChatGPT
-    # openai.api_key = OPENAI_API_KEY
-    # openai_response = None
-    # try:
-    #     openai_response = openai.Completion.create(
-    #         engine="text-davinci-003",
-    #         prompt=prompt,
-    #         max_tokens=1024,
-    #         n=1,
-    #         stop=None,
-    #         temperature=0.5).choices[0].text
-    # except openai.error.OpenAIError as e:
-    #     client.chat_postMessage(channel=body["event"]["channel"],
-    #                             thread_ts=body["event"]["event_ts"],
-    #                             text=f"There was an error in communication with OpenAI: {e}")
-    #
-    # # Reply to thread
-    # if openai_response:
-    #     client.chat_postMessage(channel=body["event"]["channel"],
-    #                             thread_ts=body["event"]["event_ts"],
-    #                             text=f"Here you go: \n{openai_response}")
     try:
         client.chat_postMessage(channel=body["event"]["channel"],
                                 thread_ts=body["event"]["event_ts"],

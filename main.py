@@ -1,4 +1,3 @@
-import openai
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt import App
 from slack_sdk.web import WebClient

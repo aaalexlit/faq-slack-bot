@@ -240,4 +240,4 @@ cython_debug/
 #.idea/
 
 keys
-/faiss_index/
+**/faiss_index/

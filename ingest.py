@@ -6,9 +6,9 @@ from langchain.vectorstores import FAISS
 
 
 def ingest_docs():
-    loader = GoogleDriveLoader(credentials_path=Path.cwd() / "keys" / "credentials.json",
-                               token_path=Path.cwd() / "keys" / "token.json",
+    loader = GoogleDriveLoader(service_account_key=Path.cwd() / "keys" / "service_account_key.json",
                                document_ids=["12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0"])
+
     raw_docs = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -18,7 +18,7 @@ def ingest_docs():
 
     embeddings = HuggingFaceEmbeddings()
     db = FAISS.from_documents(docs, embeddings)
-    db.save_local("faiss_index")
+    db.save_local("slack_bot/faiss_index")
 
 if __name__ == "__main__":
     ingest_docs()

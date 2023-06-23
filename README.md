@@ -15,7 +15,7 @@ related to MLOps Zoomcamp by DataTalks.Club
     ```bash
     python test.py
     ```
-1. To launch the bot provide all the proper keys and run [main.py](main.py)
+1. To launch the bot set all the needed keys as env vars and run [main.py](slack_bot/main.py)
     ```bash
    python main.py
    ```

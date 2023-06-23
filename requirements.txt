@@ -1,9 +1,9 @@
-openai
-slack-bolt
-slack-sdk
-langchain
+openai==0.27.8
+slack-bolt==1.18.0
+slack-sdk==3.21.3
+langchain==0.0.194
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
-sentence_transformers
-faiss-cpu
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4

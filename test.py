@@ -1,7 +1,8 @@
+import os
+import pinecone
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-import os
+from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -9,10 +10,16 @@ embeddings = HuggingFaceEmbeddings()
 
 
 def main(question):
-    faiss_store = FAISS.load_local("slack_bot/faiss_index", embeddings)
+    pinecone.init(
+        api_key=os.getenv('PINECONE_API_KEY'),
+        environment=os.getenv('PINECONE_ENV')
+    )
+
+    pinecone_index = Pinecone.from_existing_index(index_name='mlops-faq-bot',
+                                                  embedding=embeddings)
     qa = RetrievalQA.from_chain_type(
         llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
-        retriever=faiss_store.as_retriever()
+        retriever=pinecone_index.as_retriever()
     )
     qa.return_source_documents = True
     print(f"Question: {question}")
@@ -29,4 +36,4 @@ def main(question):
 
 
 if __name__ == "__main__":
-    main("How can I solve connection in use problem?")
+    main("How can I solve connection in use problem with mlflow?")

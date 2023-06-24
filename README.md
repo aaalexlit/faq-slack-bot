@@ -4,7 +4,7 @@ related to MLOps Zoomcamp by DataTalks.Club
 1. use any python virtual environment manager of your preference 
     and install the dependencies from [requirements.txt](requirements.txt)
 
-1. To create a local index run [ingest.py](ingest.py)
+1. To create a local index run [ingest.py](ingest/ingest.py)
 
     ```bash
     python ingest.py

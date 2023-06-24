@@ -1,11 +1,12 @@
+import os
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt import App
 from slack_sdk.web import WebClient
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-import os
+from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
+import pinecone
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
@@ -13,11 +14,22 @@ SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN')
 app = App(token=SLACK_BOT_TOKEN)
 client = WebClient(SLACK_BOT_TOKEN)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+print('Downloading embeddings...')
 embeddings = HuggingFaceEmbeddings()
-faiss_store = FAISS.load_local("faiss_index", embeddings)
+print('Initiating pinecone client...')
+pinecone.init(
+    api_key=os.getenv('PINECONE_API_KEY'),
+    environment=os.getenv('PINECONE_ENV')
+)
+index_name = 'mlops-faq-bot'
+pinecone_index = Pinecone.from_existing_index(index_name=index_name,
+                                              embedding=embeddings)
+index = pinecone.GRPCIndex(index_name)
+print(f"index stats: {index.describe_index_stats()}")
+
 qa = RetrievalQA.from_chain_type(
     llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
-    retriever=faiss_store.as_retriever()
+    retriever=pinecone_index.as_retriever()
 )
 
 

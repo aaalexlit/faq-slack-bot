@@ -5,8 +5,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
 import pinecone  # type: ignore
+from prefect import flow, task
 
-
+@task(log_prints=True)
 def ingest_google_doc(index_name: str,
                       document_ids: list[str],
                       ):
@@ -27,7 +28,7 @@ def ingest_google_doc(index_name: str,
     Pinecone.from_documents(docs, embeddings, index_name=index_name)
     print_index_status(index_name)
 
-
+@task(log_prints=True)
 def create_pinecone_index(index_name: str):
     pinecone.init(
         api_key=os.getenv('PINECONE_API_KEY'),
@@ -50,9 +51,10 @@ def create_pinecone_index(index_name: str):
 
 def print_index_status(index_name):
     index = pinecone.GRPCIndex(index_name)
-    print(f"index stats: {index.describe_index_stats()}")
+    index_stats = index.describe_index_stats()
+    print(f"index stats: {index_stats}")
 
-
+@flow()
 def create_and_fill_the_index(index_name: str,
                               google_doc_ids: list[str]):
     create_pinecone_index(index_name=index_name)

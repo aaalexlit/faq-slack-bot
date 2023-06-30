@@ -1,21 +1,36 @@
 This is a repo for a human-interface Slack chatbot for answering questions
 related to MLOps Zoomcamp by DataTalks.Club
 
-1. use any python virtual environment manager of your preference 
+# Before you start
+
+Use any python virtual environment manager of your preference 
     and install the dependencies from [requirements.txt](requirements.txt)
 
-1. To create a local index run [ingest.py](ingest/ingest.py)
+# Fill [Pinecone](https://www.pinecone.io/) index
+1. Set `PINECONE_API_KEY` and `PINECONE_ENV` 
+environmental variables accordingly
+ 
+2. run [ingest/ingest.py](ingest/ingest.py) 
 
     ```bash
     python ingest.py
     ```
-
-1. To test the QA pipeline locally run [test.py](test.py)
+# Test QA pipeline locally 
+1. Set `OPENAI_API_KEY`, `PINECONE_API_KEY`, and `PINECONE_ENV` 
+environmental variables accordingly
+1. Run [test.py](test.py)
 
     ```bash
     python test.py
     ```
-1. To launch the bot set all the needed keys as env vars and run [main.py](slack_bot/main.py)
+# Launch the bot
+1. Set `OPENAI_API_KEY`, `SLACK_APP_TOKEN`, `SLACK_BOT_TOKEN`,
+`PINECONE_API_KEY`, and `PINECONE_ENV` 
+environmental variables accordingly
+1. To launch the bot on the CLI run [slack_bot/main.py](slack_bot/main.py)
     ```bash
    python main.py
    ```
+
+Alternatively it can be launched with Docker, please follow 
+[this README](slack_bot/README.md)

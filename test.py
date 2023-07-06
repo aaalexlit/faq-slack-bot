@@ -1,4 +1,6 @@
 import os
+
+import langchain
 import pinecone
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceEmbeddings
@@ -7,6 +9,7 @@ from langchain.chat_models import ChatOpenAI
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 embeddings = HuggingFaceEmbeddings()
+langchain.debug = True
 
 
 def main(question):
@@ -36,4 +39,5 @@ def main(question):
 
 
 if __name__ == "__main__":
-    main("How can I solve connection in use problem with mlflow?")
+    # main("How can I solve connection in use problem with mlflow?")
+    main("MLflow UI throws an error on the browser 'Access to localhost was denied'. Any idea how to resolve this?")

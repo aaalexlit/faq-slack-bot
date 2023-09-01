@@ -14,6 +14,8 @@ SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN')
 app = App(token=SLACK_BOT_TOKEN)
 client = WebClient(SLACK_BOT_TOKEN)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["LANGCHAIN_WANDB_TRACING"] = "true"
+os.environ["WANDB_PROJECT"] = "mlops-faq-slackbot"
 print('Downloading embeddings...')
 embeddings = HuggingFaceEmbeddings()
 print('Initiating pinecone client...')

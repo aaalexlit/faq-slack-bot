@@ -4,3 +4,4 @@ slack-sdk==3.21.3
 langchain==0.0.194
 sentence-transformers==2.2.2
 pinecone-client[grpc]==2.2.2
+wandb==0.15.9

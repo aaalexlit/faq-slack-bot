@@ -240,4 +240,5 @@ cython_debug/
 #.idea/
 
 ingest/keys
-**/faiss_index/
+wandb/
+.idea

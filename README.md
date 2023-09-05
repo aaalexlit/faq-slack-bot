@@ -1,6 +1,13 @@
 This is a repo for a human-interface Slack chatbot for answering questions
 related to MLOps Zoomcamp by DataTalks.Club
 
+## Behind the scenes
+Course FAQ Google Document and the Course repo get indexed to the Pinecone vector store.
+Then semantic search retrieves the most similar (and hopefully most relevant) pieces to the question asked.
+Then this information is passed as a context to a conversational LLM to form the final answer.
+
+![Diagram](Mlops_chatbot_diagram.png)
+
 # Before you start
 
 Use any python virtual environment manager of your preference 

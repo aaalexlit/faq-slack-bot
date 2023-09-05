@@ -1,12 +1,16 @@
+import logging
 import os
-from slack_bolt.adapter.socket_mode import SocketModeHandler
-from slack_bolt import App
-from slack_sdk.web import WebClient
+
+import pinecone
 from langchain.chains import RetrievalQA
+from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
-from langchain.chat_models import ChatOpenAI
-import pinecone
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
+from slack_sdk.web import WebClient
+
+logger = logging.getLogger(__name__)
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
@@ -16,9 +20,9 @@ client = WebClient(SLACK_BOT_TOKEN)
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["LANGCHAIN_WANDB_TRACING"] = "true"
 os.environ["WANDB_PROJECT"] = "mlops-faq-slackbot"
-print('Downloading embeddings...')
+logger.info('Downloading embeddings...')
 embeddings = HuggingFaceEmbeddings()
-print('Initiating pinecone client...')
+logger.info('Initiating pinecone client...')
 pinecone.init(
     api_key=os.getenv('PINECONE_API_KEY'),
     environment=os.getenv('PINECONE_ENV')
@@ -27,19 +31,18 @@ index_name = 'mlops-faq-bot'
 pinecone_index = Pinecone.from_existing_index(index_name=index_name,
                                               embedding=embeddings)
 index = pinecone.GRPCIndex(index_name)
-print(f"index stats: {index.describe_index_stats()}")
+logger.info(f"index stats: {index.describe_index_stats()}")
 
 qa = RetrievalQA.from_chain_type(
     llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
     retriever=pinecone_index.as_retriever()
 )
 
-
 # This gets activated when the bot is tagged in a channel
 @app.event("app_mention")
 def handle_message_events(body, logger):
     # Log message
-    print(str(body["event"]["text"]).split(">")[1])
+    logger.info(str(body["event"]["text"]).split(">")[1])
 
     # Create prompt for ChatGPT
     question = str(body["event"]["text"]).split(">")[1]

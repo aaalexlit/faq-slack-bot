@@ -19,7 +19,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 embeddings = HuggingFaceEmbeddings()
 
 
-@task(name="Index FAQ Google Document", log_prints=True)
+@task(name="Index FAQ Google Document")
 def ingest_google_doc(index_name: str,
                       document_ids: list[str],
                       ):
@@ -36,10 +36,7 @@ def ingest_google_doc(index_name: str,
     raw_docs = loader.load()
     temp_creds.close()
     print('Splitting docs for indexing...')
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-    )
+    text_splitter = get_text_splitter()
     docs = text_splitter.split_documents(raw_docs)
 
     index_docs(docs, index_name)
@@ -52,7 +49,7 @@ def index_docs(docs, index_name):
     print_index_status(index_name)
 
 
-@task(name="Delete and Create Pinecone index", log_prints=True)
+@task(name="Delete and Create Pinecone index")
 def create_pinecone_index(index_name: str):
     if index_name in pinecone.list_indexes():
         print(f"Index {index_name} exists. Deleting...")
@@ -74,7 +71,7 @@ def print_index_status(index_name):
     print(f"index stats: {index_stats}")
 
 
-@task(name="Index git repo", log_prints=True)
+@task(name="Index git repo")
 def ingest_git_repo(repo_url: str, index_name: str):
     local_dir_path = f"./git/{repo_url[repo_url.rindex('/') + 1:]}"
     if Path(local_dir_path).exists():
@@ -102,7 +99,7 @@ def get_text_splitter():
     )
 
 
-@flow(name="Update the index")
+@flow(name="Update the index", log_prints=True)
 def create_and_fill_the_index(index_name: str,
                               google_doc_ids: list[str],
                               repo_url: str,

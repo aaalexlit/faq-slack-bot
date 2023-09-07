@@ -33,9 +33,6 @@ app = App(token=SLACK_BOT_TOKEN)
 # This gets activated when the bot is tagged in a channel
 @app.event("app_mention")
 def handle_message_events(body):
-    # Log message
-    logger.info(str(body["event"]["text"]).split(">")[1])
-
     channel_id = body["event"]["channel"]
     event_ts = body["event"]["event_ts"]
 
@@ -47,6 +44,7 @@ def handle_message_events(body):
 
     # Extract question from the message text
     question = str(body["event"]["text"]).split(">")[1]
+    logger.info(question)
 
     # Let the user know that we are busy with the request
     greeting_message = get_greeting_message(channel_id)

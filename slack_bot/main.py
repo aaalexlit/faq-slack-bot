@@ -6,7 +6,7 @@ import pinecone
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Pinecone
+from langchain.vectorstores import Pinecone, Milvus
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web import WebClient
@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 MLOPS_CHANNEL_ID = "C02R98X7DS9"
 ML_CHANNEL_ID = "C0288NJ5XSA"
-TEST_CHANNEL_ID = os.getenv('TEST_CHANNEL_ID')
+TEST_WS_CHANNEL_ID = os.getenv('TEST_WS_CHANNEL_ID', '')
+TEST_CHANNEL_ID = os.getenv('TEST_CHANNEL_ID', '')
 
 PROJECT_NAME = "datatalks-faq-slackbot"
 
 MLOPS_INDEX_NAME = 'mlops-faq-bot'
+ML_INDEX_NAME = 'mlzoomcamp'
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
@@ -37,7 +39,7 @@ def handle_message_events(body):
     channel_id = body["event"]["channel"]
     event_ts = body["event"]["event_ts"]
 
-    if channel_id not in [ML_CHANNEL_ID, MLOPS_CHANNEL_ID, TEST_CHANNEL_ID]:
+    if channel_id not in [ML_CHANNEL_ID, MLOPS_CHANNEL_ID, TEST_WS_CHANNEL_ID]:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text="Apologies, I can't answer questions in this channel")
@@ -55,9 +57,13 @@ def handle_message_events(body):
                             text=greeting_message)
     try:
         if channel_id in [MLOPS_CHANNEL_ID]:
-            client.chat_postMessage(channel=channel_id,
-                                    thread_ts=event_ts,
-                                    text=f"Here you go: \n{mlops_qa.run(question)}")
+            response = mlops_qa.run(question)
+        else:
+            response = ml_qa.run(question)
+
+        client.chat_postMessage(channel=channel_id,
+                                thread_ts=event_ts,
+                                text=f"Here you go: \n{response}")
     except Exception as e:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
@@ -102,6 +108,16 @@ def setup_mlops_index():
     return pinecone_index
 
 
+def setup_ml_index():
+    return Milvus(embedding_function=embeddings,
+                  collection_name=ML_INDEX_NAME,
+                  connection_args={
+                      "uri": os.getenv("ZILLIZ_CLOUD_URI"),
+                      "token": os.getenv("ZILLIZ_CLOUD_API_KEY"),
+                      "secure": True,
+                  })
+
+
 if __name__ == "__main__":
     client = WebClient(SLACK_BOT_TOKEN)
 
@@ -113,9 +129,15 @@ if __name__ == "__main__":
     log_to_langsmith()
 
     mlops_index = setup_mlops_index()
+    ml_index = setup_ml_index()
 
     mlops_qa = RetrievalQA.from_chain_type(
         llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
         retriever=mlops_index.as_retriever()
+    )
+
+    ml_qa = RetrievalQA.from_chain_type(
+        llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
+        retriever=ml_index.as_retriever(),
     )
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

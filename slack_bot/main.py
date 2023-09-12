@@ -21,7 +21,8 @@ MLOPS_CHANNEL_ID = "C02R98X7DS9"
 ML_CHANNEL_ID = "C0288NJ5XSA"
 TEST_CHANNEL_ID = os.getenv('TEST_CHANNEL_ID')
 
-WANDB_PROJECT_NAME = "datatalks-faq-slackbot"
+PROJECT_NAME = "datatalks-faq-slackbot"
+
 MLOPS_INDEX_NAME = 'mlops-faq-bot'
 
 # Event API & Web API
@@ -79,7 +80,13 @@ def get_greeting_message(channel_id):
 def log_to_wandb():
     # Log everything to WANDB!!!
     os.environ["LANGCHAIN_WANDB_TRACING"] = "true"
-    os.environ["WANDB_PROJECT"] = WANDB_PROJECT_NAME
+    os.environ["WANDB_PROJECT"] = PROJECT_NAME
+
+
+def log_to_langsmith():
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+    os.environ["LANGCHAIN_PROJECT"] = PROJECT_NAME
 
 
 def setup_mlops_index():
@@ -103,6 +110,7 @@ if __name__ == "__main__":
     embeddings = HuggingFaceEmbeddings()
 
     log_to_wandb()
+    log_to_langsmith()
 
     mlops_index = setup_mlops_index()
 

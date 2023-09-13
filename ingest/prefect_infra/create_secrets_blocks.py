@@ -40,9 +40,15 @@ def create_zilliz_secrets():
     create_secret_block('zilliz-cloud-api-key', 'ZILLIZ_CLOUD_API_KEY')
 
 
+def create_slack_secrets():
+    create_secret_block('slack-bot-token', 'SLACK_BOT_TOKEN')
+
+
 if __name__ == '__main__':
     create_gcp_creds_block()
     time.sleep(10)
     create_pinecone_secrets()
     time.sleep(10)
     create_zilliz_secrets()
+    time.sleep(10)
+    create_slack_secrets()

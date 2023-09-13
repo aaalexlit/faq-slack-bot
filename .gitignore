@@ -242,3 +242,5 @@ cython_debug/
 ingest/keys
 wandb/
 .idea
+
+ingest/git

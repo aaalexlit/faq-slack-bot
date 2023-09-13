@@ -2,8 +2,8 @@ import json
 import os
 import time
 
-from prefect_gcp import GcpCredentials
 from prefect.blocks.system import Secret
+from prefect_gcp import GcpCredentials
 
 
 def create_gcp_creds_block():
@@ -21,21 +21,28 @@ def create_gcp_creds_block():
         ).save(block_name)
 
 
+def create_secret_block(block_name: str, env_var_name: str) -> None:
+    try:
+        Secret.load(block_name)
+    except ValueError:
+        Secret(value=os.getenv(env_var_name)).save(name=block_name)
+
+
 def create_pinecone_secrets():
-    pinecone_api_key_block_name = 'pinecone-api-key'
-    pinecone_env_block_name = 'pinecone-env'
-    try:
-        Secret().load(pinecone_api_key_block_name)
-    except ValueError:
-        Secret(value=os.getenv('PINECONE_API_KEY')).save(name=pinecone_api_key_block_name)
+    create_secret_block('pinecone-api-key', 'PINECONE_API_KEY')
     time.sleep(10)
-    try:
-        Secret().load(pinecone_env_block_name)
-    except ValueError:
-        Secret(value=os.getenv('PINECONE_ENV')).save(name=pinecone_env_block_name)
+    create_secret_block('pinecone-env', 'PINECONE_ENV')
+
+
+def create_zilliz_secrets():
+    create_secret_block('zilliz-cloud-uri', 'ZILLIZ_CLOUD_URI')
+    time.sleep(10)
+    create_secret_block('zilliz-cloud-api-key', 'ZILLIZ_CLOUD_API_KEY')
 
 
 if __name__ == '__main__':
     create_gcp_creds_block()
     time.sleep(10)
     create_pinecone_secrets()
+    time.sleep(10)
+    create_zilliz_secrets()

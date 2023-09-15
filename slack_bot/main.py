@@ -130,7 +130,13 @@ if __name__ == "__main__":
 
     logger.info('Downloading embeddings...')
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    embeddings = HuggingFaceEmbeddings()
+    while True:
+        try:
+            embeddings = HuggingFaceEmbeddings()
+            embedding_dimension = len(embeddings.embed_query("test"))
+        except ChunkedEncodingError as e:
+            continue
+        break
 
     log_to_wandb()
     log_to_langsmith()

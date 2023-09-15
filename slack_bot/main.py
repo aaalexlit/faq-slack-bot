@@ -71,16 +71,23 @@ def handle_message_events(body):
 
 
 def get_greeting_message(channel_id):
-    name = 'MLOps' if channel_id == MLOPS_CHANNEL_ID else 'ML'
-    link = '12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d' if channel_id == MLOPS_CHANNEL_ID \
-        else '1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8/edit#heading=h.98qq6wfuzeck'
-    return f"Hello from {name}FAQ Bot! :robot_face: \n" \
+    message_template = "Hello from {name}FAQ Bot! :robot_face: \n" \
            "Please note that this is an alpha version " \
            "and the answers might not be accurate since I'm " \
-           f"just a human-friendly interface to the {name} Zoomcamp FAQ " \
+           "just a human-friendly interface to the {name} Zoomcamp FAQ " \
            "document that can be found in the " \
-           f"<https://docs.google.com/document/d/{link}|following link>" \
+           "<https://docs.google.com/document/d/{link}|following link>" \
+           " {additional_message}." \
            "\nThanks for your request, I'm on it!"
+    if channel_id == MLOPS_CHANNEL_ID:
+        name = 'MLOps'
+        link = '12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d'
+        additional_message = "and also this course's github repository"
+    else:
+        name = 'ML'
+        link = '1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8/edit#heading=h.98qq6wfuzeck'
+        additional_message = 'and also this Slack channel'
+    return message_template.format(name=name, link=link, additional_message=additional_message)
 
 
 def log_to_wandb():

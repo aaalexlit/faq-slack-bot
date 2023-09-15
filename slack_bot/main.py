@@ -6,7 +6,10 @@ import pinecone
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Pinecone, Milvus
+from langchain.vectorstores import Pinecone
+from llama_index import ServiceContext, VectorStoreIndex
+from llama_index.vector_stores import MilvusVectorStore
+from requests.exceptions import ChunkedEncodingError
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web import WebClient
@@ -39,7 +42,7 @@ def handle_message_events(body):
     channel_id = body["event"]["channel"]
     event_ts = body["event"]["event_ts"]
 
-    if channel_id not in [ML_CHANNEL_ID, MLOPS_CHANNEL_ID, TEST_WS_CHANNEL_ID]:
+    if channel_id not in [ML_CHANNEL_ID, MLOPS_CHANNEL_ID, TEST_WS_CHANNEL_ID, TEST_CHANNEL_ID]:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text="Apologies, I can't answer questions in this channel")
@@ -59,7 +62,7 @@ def handle_message_events(body):
         if channel_id in [MLOPS_CHANNEL_ID]:
             response = mlops_qa.run(question)
         else:
-            response = ml_qa.run(question)
+            response = ml_query_engine.query(question)
 
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
@@ -115,14 +118,16 @@ def setup_mlops_index():
     return pinecone_index
 
 
-def setup_ml_index():
-    return Milvus(embedding_function=embeddings,
-                  collection_name=ML_INDEX_NAME,
-                  connection_args={
-                      "uri": os.getenv("ZILLIZ_CLOUD_URI"),
-                      "token": os.getenv("ZILLIZ_CLOUD_API_KEY"),
-                      "secure": True,
-                  })
+def get_ml_query_engine():
+    vector_store = MilvusVectorStore(collection_name="mlzoomcamp",
+                                     uri=os.getenv("ZILLIZ_CLOUD_URI"),
+                                     token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
+                                     dim=embedding_dimension,
+                                     overwrite=False)
+    service_context = ServiceContext.from_defaults(embed_model=embeddings,
+                                                   llm=ChatOpenAI(model_name='gpt-3.5-turbo'))
+    vector_store_index = VectorStoreIndex.from_vector_store(vector_store, service_context=service_context)
+    return vector_store_index.as_query_engine()
 
 
 if __name__ == "__main__":
@@ -142,15 +147,12 @@ if __name__ == "__main__":
     log_to_langsmith()
 
     mlops_index = setup_mlops_index()
-    ml_index = setup_ml_index()
 
     mlops_qa = RetrievalQA.from_chain_type(
         llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
         retriever=mlops_index.as_retriever()
     )
 
-    ml_qa = RetrievalQA.from_chain_type(
-        llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
-        retriever=ml_index.as_retriever(),
-    )
+    ml_query_engine = get_ml_query_engine()
+
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

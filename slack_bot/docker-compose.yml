@@ -1,6 +1,5 @@
 services:
   faq-slack-bot:
-    platform: linux/amd64
     build:
       context: .
     env_file:

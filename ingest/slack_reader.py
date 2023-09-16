@@ -95,7 +95,7 @@ class SlackReader(BasePydanticReader):
         """Get the name identifier of the class."""
         return "SlackReader"
 
-    def _read_message(self, channel_id: str, message_ts: str) -> str:
+    def _read_message(self, channel_id: str, message_ts: str) -> Document:
         from slack_sdk.errors import SlackApiError
 
         """Read a message."""
@@ -111,11 +111,7 @@ class SlackReader(BasePydanticReader):
                     "ts": message_ts,
                     "cursor": next_cursor,
                 }
-                if self.earliest_date_timestamp is None:
-                    result = self._client.conversations_replies(
-                        channel=channel_id, ts=message_ts, cursor=next_cursor
-                    )
-                else:
+                if self.earliest_date_timestamp is not None:
                     conversations_replies_kwargs |= {
                         "latest": str(self.latest_date_timestamp),
                         "oldest": str(self.earliest_date_timestamp),
@@ -132,14 +128,14 @@ class SlackReader(BasePydanticReader):
             except SlackApiError as e:
                 self.sleep_on_ratelimit(e)
 
-        return "\n\n".join(messages_text)
+        return Document(text="\n\n".join(messages_text), metadata={"channel": channel_id, "thread_ts": message_ts})
 
-    def _read_channel(self, channel_id: str, reverse_chronological: bool) -> str:
+    def _read_channel(self, channel_id: str) -> List[Document]:
         from slack_sdk.errors import SlackApiError
 
         """Read a channel."""
 
-        result_messages: List[str] = []
+        thread_documents: List[Document] = []
         next_cursor = None
         while True:
             try:
@@ -163,7 +159,7 @@ class SlackReader(BasePydanticReader):
                 # Print results
                 logger.info(f"{len(conversation_history)} messages found in {channel_id}")
 
-                result_messages.extend(
+                thread_documents.extend(
                     self._read_message(channel_id, message["ts"]) for message in conversation_history
                     if self.is_for_indexing(message, self.bot_user_id)
                 )
@@ -174,11 +170,7 @@ class SlackReader(BasePydanticReader):
             except SlackApiError as e:
                 self.sleep_on_ratelimit(e)
 
-        return (
-            "\n\n".join(result_messages)
-            if reverse_chronological
-            else "\n\n".join(result_messages[::-1])
-        )
+        return thread_documents
 
     @staticmethod
     def sleep_on_ratelimit(e):
@@ -202,9 +194,7 @@ class SlackReader(BasePydanticReader):
                 return True
         return False
 
-    def load_data(
-            self, channel_ids: List[str], reverse_chronological: bool = True
-    ) -> List[Document]:
+    def load_data(self, channel_ids: List[str]) -> List[Document]:
         """Load data from the input directory.
 
         Args:
@@ -214,15 +204,13 @@ class SlackReader(BasePydanticReader):
         """
         results = []
         for channel_id in channel_ids:
-            channel_content = self._read_channel(
-                channel_id, reverse_chronological=reverse_chronological
-            )
-            results.append(
-                Document(text=channel_content, metadata={"channel": channel_id})
-            )
+            results.extend(self._read_channel(channel_id))
         return results
 
 
 if __name__ == "__main__":
-    reader = SlackReader(earliest_date=datetime(2021, 8, 27), bot_user_id='U05DM3PEJA2')
-    logger.info(reader.load_data(channel_ids=["C0288NJ5XSA"]))
+    reader = SlackReader(earliest_date=datetime(2023, 9, 10), bot_user_id='U05DM3PEJA2')
+    for thread in reader.load_data(channel_ids=["C0288NJ5XSA"]):
+        logger.info(f'Text: {thread.text}')
+        logger.info(f'Metadata: {thread.metadata}')
+        logger.info('----------------------------')

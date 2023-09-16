@@ -27,6 +27,8 @@ logger.info(f'embedding dimension = {embedding_dimension}')
 
 BOT_USER_ID = 'U05DM3PEJA2'
 ML_CHANNEL_ID = 'C0288NJ5XSA'
+FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
+SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
 
 @task(name="Index FAQ Google Document")
@@ -41,7 +43,8 @@ def index_google_doc():
                                document_ids=document_ids)
     raw_docs = loader.load()
     temp_creds.close()
-    add_to_index([Document.from_langchain_format(doc) for doc in raw_docs])
+    add_to_index([Document.from_langchain_format(doc) for doc in raw_docs],
+                 collection_name=FAQ_COLLECTION_NAME)
 
 
 @task(name="Index slack messages")
@@ -49,13 +52,13 @@ def index_slack_messages():
     slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1), bot_user_id=BOT_USER_ID)
 
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
-    add_to_index(documents, overwrite=False)
+    add_to_index(documents, collection_name=SLACK_COLLECTION_NAME, overwrite=True)
 
 
-def add_to_index(documents, overwrite=True):
-    node_parser = SimpleNodeParser.from_defaults(chunk_size=1024, chunk_overlap=20)
+def add_to_index(documents, collection_name, overwrite=True):
+    node_parser = SimpleNodeParser.from_defaults(chunk_size=384, chunk_overlap=20)
     storage_context = StorageContext.from_defaults(
-        vector_store=MilvusVectorStore(collection_name="mlzoomcamp",
+        vector_store=MilvusVectorStore(collection_name=collection_name,
                                        uri=Secret.load('zilliz-cloud-uri').get(),
                                        token=Secret.load('zilliz-cloud-api-key').get(),
                                        dim=embedding_dimension,

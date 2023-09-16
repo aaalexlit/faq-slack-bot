@@ -8,6 +8,9 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
 from llama_index import ServiceContext, VectorStoreIndex
+from llama_index.query_engine import RouterQueryEngine
+from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
+from llama_index.tools import QueryEngineTool
 from llama_index.vector_stores import MilvusVectorStore
 from requests.exceptions import ChunkedEncodingError
 from slack_bolt import App
@@ -28,7 +31,11 @@ TEST_CHANNEL_ID = os.getenv('TEST_CHANNEL_ID', '')
 PROJECT_NAME = "datatalks-faq-slackbot"
 
 MLOPS_INDEX_NAME = 'mlops-faq-bot'
-ML_INDEX_NAME = 'mlzoomcamp'
+ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
+ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
+
+ML_FAQ_TOOL_DESCRIPTION = "Useful for retrieving specific context from the course FAQ document"
+ML_SLACK_TOOL_DESCRIPTION = "Useful for retrieving specific context from the course slack channel history"
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
@@ -75,13 +82,13 @@ def handle_message_events(body):
 
 def get_greeting_message(channel_id):
     message_template = "Hello from {name}FAQ Bot! :robot_face: \n" \
-           "Please note that this is an alpha version " \
-           "and the answers might not be accurate since I'm " \
-           "just a human-friendly interface to the {name} Zoomcamp FAQ " \
-           "document that can be found in the " \
-           "<https://docs.google.com/document/d/{link}|following link>" \
-           " {additional_message}." \
-           "\nThanks for your request, I'm on it!"
+                       "Please note that this is an alpha version " \
+                       "and the answers might not be accurate since I'm " \
+                       "just a human-friendly interface to the {name} Zoomcamp FAQ " \
+                       "document that can be found in the " \
+                       "<https://docs.google.com/document/d/{link}|following link>" \
+                       " {additional_message}." \
+                       "\nThanks for your request, I'm on it!"
     if channel_id == MLOPS_CHANNEL_ID:
         name = 'MLOps'
         link = '12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d'
@@ -118,16 +125,36 @@ def setup_mlops_index():
     return pinecone_index
 
 
-def get_ml_query_engine():
-    vector_store = MilvusVectorStore(collection_name="mlzoomcamp",
+def get_query_engine_tool_by_name(collection_name, service_context, description):
+    vector_store = MilvusVectorStore(collection_name=collection_name,
                                      uri=os.getenv("ZILLIZ_CLOUD_URI"),
                                      token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
                                      dim=embedding_dimension,
                                      overwrite=False)
+    vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
+                                                            service_context=service_context)
+
+    return QueryEngineTool.from_defaults(
+        query_engine=vector_store_index.as_query_engine(),
+        description=description,
+    )
+
+
+def get_ml_query_engine():
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                    llm=ChatOpenAI(model_name='gpt-3.5-turbo'))
-    vector_store_index = VectorStoreIndex.from_vector_store(vector_store, service_context=service_context)
-    return vector_store_index.as_query_engine()
+    faq_tool = get_query_engine_tool_by_name(ML_FAQ_COLLECTION_NAME, service_context, ML_FAQ_TOOL_DESCRIPTION)
+
+    slack_tool = get_query_engine_tool_by_name(ML_SLACK_COLLECTION_NAME, service_context, ML_SLACK_TOOL_DESCRIPTION)
+
+    # Create the multi selector query engine
+    return RouterQueryEngine(
+        selector=PydanticMultiSelector.from_defaults(),
+        query_engine_tools=[
+            slack_tool,
+            faq_tool,
+        ],
+    )
 
 
 if __name__ == "__main__":

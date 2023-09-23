@@ -33,6 +33,5 @@ jobs:
           context: ./slack_bot/
           file: ./slack_bot/Dockerfile
           push: true
-          target: build-image
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -10,6 +10,9 @@ jobs:
   build-and-push-image:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Check out the repo

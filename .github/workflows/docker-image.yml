@@ -31,7 +31,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./slack_bot/
-          file: ./Dockerfile
+          file: ./slack_bot/Dockerfile
           push: true
           target: build-image
           tags: ${{ steps.meta.outputs.tags }}

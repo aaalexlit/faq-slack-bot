@@ -3,9 +3,6 @@ name: Docker Image CI
 on:
   workflow_dispatch:
 
-env:
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   build-and-push-image:
     name: Push Docker image to Docker Hub
@@ -28,7 +25,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: aaalexlit/${{ env.IMAGE_NAME }}
+          images: aaalexlit/faq-slack-bot
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

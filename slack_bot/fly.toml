@@ -1,0 +1,17 @@
+# fly.toml app configuration file generated for faq-slack-bot on 2023-09-22T21:35:05+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "faq-slack-bot"
+primary_region = "mad"
+console_command = "sudo mount /tmp -o remount,exec"
+
+[build]
+  image = "aaalexlit/faq-slack-bot:main"
+
+[env]
+  PINECONE_ENV = "gcp-starter"
+  TEST_CHANNEL_ID = "C05DTQECY66"
+  TEST_WS_CHANNEL_ID = "C05C3SGMLBB"
+  TMPDIR = "/var/tmp/"

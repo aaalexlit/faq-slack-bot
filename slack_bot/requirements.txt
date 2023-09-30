@@ -1,8 +1,8 @@
-openai==0.28.0
+openai==0.28.1
 slack-bolt==1.18.0
-slack-sdk==3.21.3
-langchain==0.0.284
+slack-sdk==3.22.0
+langchain==0.0.305
 sentence-transformers==2.2.2
 pinecone-client[grpc]==2.2.2
-wandb==0.15.10
-llama-index==0.8.25
+wandb==0.15.11
+llama-index==0.8.36

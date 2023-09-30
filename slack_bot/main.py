@@ -8,6 +8,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
 from llama_index import ServiceContext, VectorStoreIndex
+from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
+from llama_index.llms import OpenAI
 from llama_index.query_engine import RouterQueryEngine
 from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
 from llama_index.tools import QueryEngineTool
@@ -28,7 +30,8 @@ ML_CHANNEL_ID = "C0288NJ5XSA"
 TEST_WS_CHANNEL_ID = os.getenv('TEST_WS_CHANNEL_ID', '')
 TEST_CHANNEL_ID = os.getenv('TEST_CHANNEL_ID', '')
 
-PROJECT_NAME = "datatalks-faq-slackbot"
+PROJECT_NAME = 'datatalks-faq-slackbot'
+ML_ZOOMCAMP_PROJECT_NAME = 'ml-zoomcamp-slack-bot'
 
 MLOPS_INDEX_NAME = 'mlops-faq-bot'
 ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
@@ -101,7 +104,7 @@ def get_greeting_message(channel_id):
     return message_template.format(name=name, link=link, additional_message=additional_message)
 
 
-def log_to_wandb():
+def log_langchain_to_wandb():
     # Log everything to WANDB!!!
     os.environ["LANGCHAIN_WANDB_TRACING"] = "true"
     os.environ["WANDB_PROJECT"] = PROJECT_NAME
@@ -126,7 +129,7 @@ def setup_mlops_index():
     return pinecone_index
 
 
-def get_query_engine_tool_by_name(collection_name, service_context, description):
+def get_query_engine_tool_by_name(collection_name, service_context, description, similarity_top_k=4):
     vector_store = MilvusVectorStore(collection_name=collection_name,
                                      uri=os.getenv("ZILLIZ_CLOUD_URI"),
                                      token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
@@ -136,25 +139,39 @@ def get_query_engine_tool_by_name(collection_name, service_context, description)
                                                             service_context=service_context)
 
     return QueryEngineTool.from_defaults(
-        query_engine=vector_store_index.as_query_engine(),
+        query_engine=vector_store_index.as_query_engine(similarity_top_k=similarity_top_k),
         description=description,
     )
 
 
-def get_ml_query_engine():
-    service_context = ServiceContext.from_defaults(embed_model=embeddings,
-                                                   llm=ChatOpenAI(model_name='gpt-3.5-turbo'))
-    faq_tool = get_query_engine_tool_by_name(ML_FAQ_COLLECTION_NAME, service_context, ML_FAQ_TOOL_DESCRIPTION)
+def init_llama_index_callback_manager():
+    llama_debug = LlamaDebugHandler(print_trace_on_end=True)
+    wandb_callback = WandbCallbackHandler(run_args=dict(project=ML_ZOOMCAMP_PROJECT_NAME))
+    return CallbackManager([wandb_callback, llama_debug])
 
-    slack_tool = get_query_engine_tool_by_name(ML_SLACK_COLLECTION_NAME, service_context, ML_SLACK_TOOL_DESCRIPTION)
+
+def get_ml_query_engine():
+    callback_manager = init_llama_index_callback_manager()
+    service_context = ServiceContext.from_defaults(embed_model=embeddings,
+                                                   callback_manager=callback_manager,
+                                                   llm=OpenAI(model='gpt-3.5-turbo', temperature=0.4))
+    faq_tool = get_query_engine_tool_by_name(collection_name=ML_FAQ_COLLECTION_NAME,
+                                             service_context=service_context,
+                                             description=ML_FAQ_TOOL_DESCRIPTION)
+
+    slack_tool = get_query_engine_tool_by_name(collection_name=ML_SLACK_COLLECTION_NAME,
+                                               service_context=service_context,
+                                               description=ML_SLACK_TOOL_DESCRIPTION,
+                                               similarity_top_k=10)
 
     # Create the multi selector query engine
     return RouterQueryEngine(
-        selector=PydanticMultiSelector.from_defaults(),
+        selector=PydanticMultiSelector.from_defaults(verbose=True),
         query_engine_tools=[
             slack_tool,
             faq_tool,
         ],
+        service_context=service_context
     )
 
 
@@ -171,7 +188,7 @@ if __name__ == "__main__":
             continue
         break
 
-    log_to_wandb()
+    log_langchain_to_wandb()
     log_to_langsmith()
 
     mlops_index = setup_mlops_index()

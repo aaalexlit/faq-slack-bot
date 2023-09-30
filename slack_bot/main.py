@@ -35,7 +35,8 @@ ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
 ML_FAQ_TOOL_DESCRIPTION = "Useful for retrieving specific context from the course FAQ document"
-ML_SLACK_TOOL_DESCRIPTION = "Useful for retrieving specific context from the course slack channel history"
+ML_SLACK_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course "
+                             "slack channel history when nothing is found in the FAQ document")
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')

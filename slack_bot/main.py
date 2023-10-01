@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import sys
 
 import pinecone
@@ -9,7 +10,6 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
 from llama_index import ServiceContext, VectorStoreIndex
 from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
-from llama_index.llms import OpenAI
 from llama_index.query_engine import RouterQueryEngine
 from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
 from llama_index.tools import QueryEngineTool
@@ -60,7 +60,7 @@ def handle_message_events(body):
         return
 
     # Extract question from the message text
-    question = str(body["event"]["text"]).split(">")[1]
+    question = remove_mentions(str(body["event"]["text"]))
     logger.info(question)
 
     # Let the user know that we are busy with the request
@@ -82,6 +82,13 @@ def handle_message_events(body):
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text=f"There was an error: {e}")
+
+
+def remove_mentions(input_text):
+    # Define a regular expression pattern to match the mention
+    mention_pattern = r'<@U[0-9A-Z]+>'
+
+    return re.sub(mention_pattern, '', input_text)
 
 
 def get_greeting_message(channel_id):

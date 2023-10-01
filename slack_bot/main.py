@@ -154,7 +154,7 @@ def get_ml_query_engine():
     callback_manager = init_llama_index_callback_manager()
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                    callback_manager=callback_manager,
-                                                   llm=OpenAI(model='gpt-3.5-turbo', temperature=0.4))
+                                                   llm=ChatOpenAI(model='gpt-3.5-turbo', temperature=0.4))
     faq_tool = get_query_engine_tool_by_name(collection_name=ML_FAQ_COLLECTION_NAME,
                                              service_context=service_context,
                                              description=ML_FAQ_TOOL_DESCRIPTION)

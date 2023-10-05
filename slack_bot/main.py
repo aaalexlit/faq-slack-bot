@@ -10,6 +10,7 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
 from llama_index import ServiceContext, VectorStoreIndex
 from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
+from llama_index.indices.postprocessor.cohere_rerank import CohereRerank
 from llama_index.query_engine import RouterQueryEngine
 from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
 from llama_index.tools import QueryEngineTool
@@ -39,7 +40,8 @@ ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
 ML_FAQ_TOOL_DESCRIPTION = "Useful for retrieving specific context from the course FAQ document"
 ML_SLACK_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course "
-                             "slack channel history when nothing is found in the FAQ document")
+                             "slack channel history especially the questions about homework "
+                             "or when it's not likely to appear in the FAQ document")
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
@@ -136,7 +138,11 @@ def setup_mlops_index():
     return pinecone_index
 
 
-def get_query_engine_tool_by_name(collection_name, service_context, description, similarity_top_k=4):
+def get_query_engine_tool_by_name(collection_name,
+                                  service_context,
+                                  description,
+                                  similarity_top_k=4,
+                                  rerank_top_n=2):
     vector_store = MilvusVectorStore(collection_name=collection_name,
                                      uri=os.getenv("ZILLIZ_CLOUD_URI"),
                                      token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
@@ -145,8 +151,13 @@ def get_query_engine_tool_by_name(collection_name, service_context, description,
     vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
                                                             service_context=service_context)
 
+    cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=rerank_top_n)
+
     return QueryEngineTool.from_defaults(
-        query_engine=vector_store_index.as_query_engine(similarity_top_k=similarity_top_k),
+        query_engine=vector_store_index.as_query_engine(
+            similarity_top_k=similarity_top_k,
+            node_postprocessors=[cohere_rerank],
+        ),
         description=description,
     )
 
@@ -169,7 +180,8 @@ def get_ml_query_engine():
     slack_tool = get_query_engine_tool_by_name(collection_name=ML_SLACK_COLLECTION_NAME,
                                                service_context=service_context,
                                                description=ML_SLACK_TOOL_DESCRIPTION,
-                                               similarity_top_k=10)
+                                               similarity_top_k=10,
+                                               rerank_top_n=4)
 
     # Create the multi selector query engine
     return RouterQueryEngine(

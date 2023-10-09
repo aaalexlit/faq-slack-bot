@@ -21,7 +21,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.web import WebClient
 
 logging.basicConfig(stream=sys.stdout,
-                    level=logging.INFO,
+                    level=os.getenv('LOG_LEVEL', logging.INFO),
                     format='%(asctime)s %(message)s',
                     datefmt='%d-%m-%Y %H:%M:%S', )
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 sentence-transformers
-pinecone-client
+pinecone-client[grpc]
 prefect
 prefect-gcp
 GitPython

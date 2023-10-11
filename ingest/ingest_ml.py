@@ -26,6 +26,7 @@ embedding_dimension = len(embeddings.embed_query("test"))
 logger.info(f'embedding dimension = {embedding_dimension}')
 
 BOT_USER_ID = 'U05DM3PEJA2'
+AU_TOMATOR_USER_ID = 'U01S08W6Z9T'
 ML_CHANNEL_ID = 'C0288NJ5XSA'
 FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
@@ -49,7 +50,9 @@ def index_google_doc():
 
 @task(name="Index slack messages")
 def index_slack_messages():
-    slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1), bot_user_id=BOT_USER_ID)
+    slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1),
+                               bot_user_id=BOT_USER_ID,
+                               not_ignore_users=[AU_TOMATOR_USER_ID])
 
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
     add_to_index(documents, collection_name=SLACK_COLLECTION_NAME, overwrite=True)

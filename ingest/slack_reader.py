@@ -40,6 +40,7 @@ class SlackReader(BasePydanticReader):
     earliest_date_timestamp: Optional[float]
     latest_date_timestamp: float
     bot_user_id: Optional[str]
+    not_ignore_users: Optional[list[str]] = []
 
     _client: Any = PrivateAttr()
 
@@ -51,7 +52,8 @@ class SlackReader(BasePydanticReader):
             latest_date: Optional[datetime] = None,
             earliest_date_timestamp: Optional[float] = None,
             latest_date_timestamp: Optional[float] = None,
-            bot_user_id: Optional[str] = None
+            bot_user_id: Optional[str] = None,
+            not_ignore_users: Optional[list[str]] = None
     ) -> None:
         """Initialize with parameters."""
         from slack_sdk import WebClient
@@ -71,6 +73,8 @@ class SlackReader(BasePydanticReader):
             raise ValueError(
                 "Must specify `earliest_date` if `latest_date` is specified."
             )
+        if not_ignore_users is None:
+            not_ignore_users = []
         if earliest_date is not None:
             earliest_date_timestamp = earliest_date.timestamp()
         else:
@@ -88,6 +92,7 @@ class SlackReader(BasePydanticReader):
             earliest_date_timestamp=earliest_date_timestamp,
             latest_date_timestamp=latest_date_timestamp,
             bot_user_id=bot_user_id,
+            not_ignore_users=not_ignore_users,
         )
 
     @classmethod
@@ -121,6 +126,9 @@ class SlackReader(BasePydanticReader):
                 )
                 messages = result["messages"]
                 messages_text.extend(message["text"] for message in messages if message['user'] != self.bot_user_id)
+                messages_text.extend(message["attachments"][0]["text"] for message in messages if
+                                     message['user'] in self.not_ignore_users and "attachments" in message)
+
                 if not result["has_more"]:
                     break
 
@@ -161,7 +169,7 @@ class SlackReader(BasePydanticReader):
 
                 thread_documents.extend(
                     self._read_message(channel_id, message["ts"]) for message in conversation_history
-                    if self.is_for_indexing(message, self.bot_user_id)
+                    if self.is_for_indexing(message)
                 )
                 if not result["has_more"]:
                     break
@@ -183,15 +191,17 @@ class SlackReader(BasePydanticReader):
         else:
             logger.error(f"Error parsing conversation replies: {e}")
 
-    @staticmethod
-    def is_for_indexing(message, bot_user_id):
+    def is_for_indexing(self, message):
         # ignore unanswered messages
         if 'reply_count' in message:
             # if bot user id isn't specified or bot hasn't replied the message
-            if not bot_user_id or bot_user_id not in message['reply_users']:
+            if not self.bot_user_id or self.bot_user_id not in message['reply_users']:
                 return True
             if message['reply_users_count'] > 1:
                 return True
+        # even if it's a single message but from a user in un-ignore list, index it
+        elif message['user'] in self.not_ignore_users:
+            return True
         return False
 
     def load_data(self, channel_ids: List[str]) -> List[Document]:
@@ -209,7 +219,9 @@ class SlackReader(BasePydanticReader):
 
 
 if __name__ == "__main__":
-    reader = SlackReader(earliest_date=datetime(2023, 9, 10), bot_user_id='U05DM3PEJA2')
+    reader = SlackReader(earliest_date=datetime(2023, 10, 7),
+                         bot_user_id='U05DM3PEJA2',
+                         not_ignore_users=['U01S08W6Z9T'])
     for thread in reader.load_data(channel_ids=["C0288NJ5XSA"]):
         logger.info(f'Text: {thread.text}')
         logger.info(f'Metadata: {thread.metadata}')

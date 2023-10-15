@@ -136,7 +136,7 @@ class SlackReader(BasePydanticReader):
             except SlackApiError as e:
                 self.sleep_on_ratelimit(e)
 
-        return Document(text="\n\n".join(messages_text), metadata={"channel": channel_id, "thread_ts": message_ts})
+        return Document(text="\n\n".join(messages_text), metadata={"channel": channel_id, "thread_ts": float(message_ts)})
 
     def _read_channel(self, channel_id: str) -> List[Document]:
         from slack_sdk.errors import SlackApiError
@@ -219,7 +219,7 @@ class SlackReader(BasePydanticReader):
 
 
 if __name__ == "__main__":
-    reader = SlackReader(earliest_date=datetime(2023, 10, 7),
+    reader = SlackReader(earliest_date=datetime(2023, 10, 13),
                          bot_user_id='U05DM3PEJA2',
                          not_ignore_users=['U01S08W6Z9T'])
     for thread in reader.load_data(channel_ids=["C0288NJ5XSA"]):

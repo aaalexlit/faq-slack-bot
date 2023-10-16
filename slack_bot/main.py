@@ -10,6 +10,9 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone
 from llama_index import ServiceContext, VectorStoreIndex
 from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
+from llama_index.indices.postprocessor import (
+    TimeWeightedPostprocessor
+)
 from llama_index.indices.postprocessor.cohere_rerank import CohereRerank
 from llama_index.query_engine import RouterQueryEngine
 from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
@@ -77,13 +80,37 @@ def handle_message_events(body):
         else:
             response = ml_query_engine.query(question)
 
+        if hasattr(response, "source_nodes"):
+            sources = links_to_source_nodes(response)
+        else:
+            sources = ''
+
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
-                                text=f"Here you go: \n{response}")
+                                text=f"Here you go: \n{response} \n"
+                                     f"Sources:\n{sources}"
+                                )
     except Exception as e:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text=f"There was an error: {e}")
+
+
+def links_to_source_nodes(response):
+    res = set()
+    source_nodes = response.source_nodes
+    link_template = 'https://datatalks-club.slack.com/archives/{}/p{}'
+    for node in source_nodes:
+        # For the time being only slack channel messages source can be provided
+        if 'channel' in node.metadata:
+            channel_id = node.metadata['channel']
+            thread_ts = node.metadata['thread_ts']
+            thread_ts_str = str(thread_ts).replace('.', '')
+            link_template.format(channel_id, thread_ts_str)
+            res.add(link_template.format(channel_id, thread_ts_str))
+        elif 'source' in node.metadata:
+            res.add(f"<{node.metadata['source']}|{node.metadata['title']}> ")
+    return '\n'.join(res)
 
 
 def remove_mentions(input_text):
@@ -142,7 +169,8 @@ def get_query_engine_tool_by_name(collection_name,
                                   service_context,
                                   description,
                                   similarity_top_k=4,
-                                  rerank_top_n=2):
+                                  rerank_top_n=2,
+                                  rerank_by_time=False):
     vector_store = MilvusVectorStore(collection_name=collection_name,
                                      uri=os.getenv("ZILLIZ_CLOUD_URI"),
                                      token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
@@ -152,11 +180,21 @@ def get_query_engine_tool_by_name(collection_name,
                                                             service_context=service_context)
 
     cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=rerank_top_n)
+    node_postprocessors = [cohere_rerank]
+    if rerank_by_time:
+        key = 'thread_ts'
+        recency_postprocessor = TimeWeightedPostprocessor(
+            last_accessed_key=key,
+            time_decay=0.02,
+            time_access_refresh=False,
+            top_k=10
+        )
+        node_postprocessors.insert(0, recency_postprocessor)
 
     return QueryEngineTool.from_defaults(
         query_engine=vector_store_index.as_query_engine(
             similarity_top_k=similarity_top_k,
-            node_postprocessors=[cohere_rerank],
+            node_postprocessors=node_postprocessors,
         ),
         description=description,
     )
@@ -180,8 +218,9 @@ def get_ml_query_engine():
     slack_tool = get_query_engine_tool_by_name(collection_name=ML_SLACK_COLLECTION_NAME,
                                                service_context=service_context,
                                                description=ML_SLACK_TOOL_DESCRIPTION,
-                                               similarity_top_k=10,
-                                               rerank_top_n=4)
+                                               similarity_top_k=20,
+                                               rerank_top_n=3,
+                                               rerank_by_time=True)
 
     # Create the multi selector query engine
     return RouterQueryEngine(

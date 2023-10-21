@@ -60,13 +60,12 @@ def index_slack_messages():
 
 def add_to_index(documents, collection_name, overwrite=True):
     node_parser = SimpleNodeParser.from_defaults(chunk_size=384, chunk_overlap=20)
-    storage_context = StorageContext.from_defaults(
-        vector_store=MilvusVectorStore(collection_name=collection_name,
-                                       uri=Secret.load('zilliz-cloud-uri').get(),
-                                       token=Secret.load('zilliz-cloud-api-key').get(),
-                                       dim=embedding_dimension,
-                                       overwrite=overwrite)
-    )
+    milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
+                                            uri=Secret.load('zilliz-cloud-uri').get(),
+                                            token=Secret.load('zilliz-cloud-api-key').get(),
+                                            dim=embedding_dimension,
+                                            overwrite=overwrite)
+    storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
     service_context = ServiceContext.from_defaults(embed_model=embeddings, node_parser=node_parser, llm=None)
     VectorStoreIndex.from_documents(documents, storage_context=storage_context,
                                     service_context=service_context)

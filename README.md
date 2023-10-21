@@ -17,7 +17,7 @@ Use any python virtual environment manager of your preference
 1. Set `PINECONE_API_KEY` and `PINECONE_ENV` 
 environmental variables accordingly
  
-2. run [ingest/ingest.py](ingest/ingest.py) 
+2. run [ingest/ingest.py](ingest/mlops/ingest.py) 
 
     ```bash
     python ingest.py

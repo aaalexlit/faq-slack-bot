@@ -243,4 +243,8 @@ ingest/keys
 wandb/
 .idea
 
-ingest/git
+# ignore local folders where the indexed repo gets cloned to
+**/git
+
+# ignore local milvus volumes
+**/volumes

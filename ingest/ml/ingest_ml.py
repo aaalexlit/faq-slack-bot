@@ -33,7 +33,7 @@ SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
 
 @task(name="Index FAQ Google Document")
-def index_google_doc():
+def index_google_doc(local: bool):
     document_ids = ["1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8"]
     logger.info('Loading google doc...')
     temp_creds = tempfile.NamedTemporaryFile()
@@ -45,26 +45,31 @@ def index_google_doc():
     raw_docs = loader.load()
     temp_creds.close()
     add_to_index([Document.from_langchain_format(doc) for doc in raw_docs],
-                 collection_name=FAQ_COLLECTION_NAME)
+                 collection_name=FAQ_COLLECTION_NAME, local=local)
 
 
 @task(name="Index slack messages")
-def index_slack_messages():
+def index_slack_messages(local: bool):
     slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1),
                                bot_user_id=BOT_USER_ID,
                                not_ignore_users=[AU_TOMATOR_USER_ID])
 
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
-    add_to_index(documents, collection_name=SLACK_COLLECTION_NAME, overwrite=True)
+    add_to_index(documents, collection_name=SLACK_COLLECTION_NAME, local=local)
 
 
-def add_to_index(documents, collection_name, overwrite=True):
+def add_to_index(documents, collection_name, overwrite=True, local=True):
     node_parser = SimpleNodeParser.from_defaults(chunk_size=384, chunk_overlap=20)
-    milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
-                                            uri=Secret.load('zilliz-cloud-uri').get(),
-                                            token=Secret.load('zilliz-cloud-api-key').get(),
-                                            dim=embedding_dimension,
-                                            overwrite=overwrite)
+    if local:
+        milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
+                                                dim=embedding_dimension,
+                                                overwrite=overwrite)
+    else:
+        milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
+                                                uri=Secret.load('zilliz-cloud-uri').get(),
+                                                token=Secret.load('zilliz-cloud-api-key').get(),
+                                                dim=embedding_dimension,
+                                                overwrite=overwrite)
     storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
     service_context = ServiceContext.from_defaults(embed_model=embeddings, node_parser=node_parser, llm=None)
     VectorStoreIndex.from_documents(documents, storage_context=storage_context,
@@ -72,9 +77,9 @@ def add_to_index(documents, collection_name, overwrite=True):
 
 
 @flow(name="Update ML info Milvus index", log_prints=True)
-def fill_ml_index():
-    index_google_doc()
-    index_slack_messages()
+def fill_ml_index(local=True):
+    index_google_doc(local=local)
+    index_slack_messages(local=local)
 
 
 if __name__ == '__main__':

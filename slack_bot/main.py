@@ -171,11 +171,16 @@ def get_query_engine_tool_by_name(collection_name,
                                   similarity_top_k=4,
                                   rerank_top_n=2,
                                   rerank_by_time=False):
-    vector_store = MilvusVectorStore(collection_name=collection_name,
-                                     uri=os.getenv("ZILLIZ_CLOUD_URI"),
-                                     token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
-                                     dim=embedding_dimension,
-                                     overwrite=False)
+    if local := os.getenv('LOCAL_MILVUS', None):
+        vector_store = MilvusVectorStore(collection_name=collection_name,
+                                         dim=embedding_dimension,
+                                         overwrite=False)
+    else:
+        vector_store = MilvusVectorStore(collection_name=collection_name,
+                                         uri=os.getenv("ZILLIZ_CLOUD_URI"),
+                                         token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
+                                         dim=embedding_dimension,
+                                         overwrite=False)
     vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
                                                             service_context=service_context)
 

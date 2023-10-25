@@ -46,12 +46,14 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index
     schedule:
+      interval: 21600.0
+      anchor_date: '2023-10-25T22:00:00+01:00'
+      timezone: Europe/Madrid
     entrypoint: ingest_ml.py:fill_ml_index
-    parameters: { }
+    parameters:
+      local: false
     work_pool: *zoomcamp-faq-bot
     version:
     pull:
       - prefect.deployments.steps.set_working_directory:
           directory: /usr/src/app
-
-

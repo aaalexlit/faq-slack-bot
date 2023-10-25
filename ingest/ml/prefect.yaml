@@ -1,0 +1,54 @@
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
+# Generic metadata about this project
+name: ml
+prefect-version: 2.13.4
+
+# build section allows you to manage and build docker images
+build:
+  - prefect.deployments.steps.run_shell_script:
+      id: get-commit-hash
+      script: git rev-parse --short HEAD
+      stream_output: false
+  - prefect_docker.deployments.steps.build_docker_image:
+      id: build_image
+      requires: prefect-docker>=0.3.1
+      image_name: aaalexlit/zoomcamp-faq-ingest-ml
+      tag: "{{ get-commit-hash.stdout }}"
+      dockerfile: Dockerfile
+      platform: "linux/amd64"
+
+# push section allows you to manage if and how this project is uploaded to remote locations
+push:
+  - prefect_docker.deployments.steps.push_docker_image:
+      requires: prefect-docker>=0.3.1
+      image_name: '{{ build_image.image_name }}'
+      tag: '{{ build_image.tag }}'
+
+# pull section allows you to provide instructions for cloning this project in remote locations
+pull:
+  - prefect.deployments.steps.git_clone:
+      repository: git@github.com:aaalexlit/faq-slack-bot.git
+      branch: main
+      access_token: null
+
+definitions:
+  work_pools:
+    zoomcamp_faq_bot_workpool: &zoomcamp-faq-bot
+      name: zoomcamp-faq-bot
+      work_queue_name: docker_queue
+      job_variables:
+        image: '{{ build_image.image }}'
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+  - name: fill-index-zilliz
+    tags: [ "ml-ingest", "zoomcamp-faq-bot" ]
+    description: "Fill Zilliz index"
+    schedule: { }
+    entrypoint: ingest_ml.py:fill_ml_index
+    parameters: { }
+    work_pool: *zoomcamp-faq-bot
+
+

@@ -248,3 +248,5 @@ wandb/
 
 # ignore local milvus volumes
 **/volumes
+
+/ingest/ml/build_docker_image.md

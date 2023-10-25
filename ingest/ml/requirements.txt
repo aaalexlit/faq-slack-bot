@@ -1,0 +1,10 @@
+slack-sdk
+langchain
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+sentence-transformers
+prefect-gcp
+GitPython
+pymilvus
+llama-index

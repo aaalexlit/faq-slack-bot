@@ -52,7 +52,8 @@ def index_google_doc(local: bool):
 def index_slack_messages(local: bool):
     slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1),
                                bot_user_id=BOT_USER_ID,
-                               not_ignore_users=[AU_TOMATOR_USER_ID])
+                               not_ignore_users=[AU_TOMATOR_USER_ID],
+                               slack_token=Secret.load('slack-bot-token').get())
 
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
     add_to_index(documents, collection_name=SLACK_COLLECTION_NAME, local=local)

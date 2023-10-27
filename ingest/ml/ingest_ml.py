@@ -78,10 +78,10 @@ def add_to_index(documents, collection_name, overwrite=True, local=True):
 
 
 @flow(name="Update ML info Milvus index", log_prints=True)
-def fill_ml_index(local=True):
+def fill_ml_index(local=False):
     index_google_doc(local=local)
     index_slack_messages(local=local)
 
 
 if __name__ == '__main__':
-    fill_ml_index()
+    fill_ml_index(True)

@@ -94,10 +94,7 @@ def add_to_index(documents, collection_name, overwrite=True):
 
 @flow(name="Update ML info Milvus index", log_prints=True)
 def fill_ml_index():
+    print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
     index_google_doc()
     index_course_schedule()
     index_slack_messages()
-
-
-# if __name__ == '__main__':
-#     fill_ml_index()

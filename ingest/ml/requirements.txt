@@ -8,3 +8,4 @@ prefect-gcp
 GitPython
 pymilvus
 llama-index
+trafilatura

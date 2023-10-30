@@ -16,3 +16,4 @@ wandb
 llama-index
 pipenv
 cohere
+trafilatura

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from langchain.document_loaders import GoogleDriveLoader
 from langchain.embeddings import HuggingFaceEmbeddings
-from llama_index import StorageContext, VectorStoreIndex, ServiceContext
+from llama_index import StorageContext, VectorStoreIndex, ServiceContext, TrafilaturaWebReader
 from llama_index.node_parser import SimpleNodeParser
 from llama_index.readers import Document
 from llama_index.vector_stores import MilvusVectorStore
@@ -48,6 +48,20 @@ def index_google_doc(local: bool):
                  collection_name=FAQ_COLLECTION_NAME, local=local)
 
 
+@task(name="Index course schedule")
+def index_course_schedule(local: bool):
+    url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkEwMv5OKwCdPfW6LgqQvKk48dZjPcFDrjDstBqZfq38UPadh0Nws1b57qOVYwzAjSufKnVf7umGWH/pubhtml'
+    documents = TrafilaturaWebReader().load_data([url])
+    for doc in documents:
+        doc.metadata['title'] = 'ML Zoomcamp 2023 syllabus and deadlines'
+        doc.metadata['source'] = url
+    add_to_index(documents,
+                 collection_name=FAQ_COLLECTION_NAME,
+                 local=local,
+                 overwrite=False
+                 )
+
+
 @task(name="Index slack messages")
 def index_slack_messages(local: bool):
     slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1),
@@ -80,6 +94,7 @@ def add_to_index(documents, collection_name, overwrite=True, local=True):
 @flow(name="Update ML info Milvus index", log_prints=True)
 def fill_ml_index(local=False):
     index_google_doc(local=local)
+    index_course_schedule(local=local)
     index_slack_messages(local=local)
 
 

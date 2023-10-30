@@ -99,5 +99,5 @@ def fill_ml_index():
     index_slack_messages()
 
 
-if __name__ == '__main__':
-    fill_ml_index()
+# if __name__ == '__main__':
+#     fill_ml_index()

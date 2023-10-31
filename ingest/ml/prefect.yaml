@@ -38,6 +38,8 @@ definitions:
       work_queue_name: docker_queue
       job_variables:
         image: '{{ build_image.image }}'
+        env:
+          EXECUTION_ENV: milvus
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
   - name: fill-index-zilliz
@@ -50,8 +52,6 @@ deployments:
       anchor_date: '2023-10-25T22:00:00+01:00'
       timezone: Europe/Madrid
     entrypoint: ingest_ml.py:fill_ml_index
-    env:
-      EXECUTION_ENV=milvus
     work_pool: *zoomcamp-faq-bot
     version:
     pull:

@@ -41,7 +41,8 @@ MLOPS_INDEX_NAME = 'mlops-faq-bot'
 ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
-ML_FAQ_TOOL_DESCRIPTION = "Useful for retrieving specific context from the course FAQ document"
+ML_FAQ_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course FAQ document as well as "
+                           "information about course syllabus and deadlines, schedule in other words")
 ML_SLACK_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course "
                              "slack channel history especially the questions about homework "
                              "or when it's not likely to appear in the FAQ document")
@@ -171,10 +172,11 @@ def get_query_engine_tool_by_name(collection_name,
                                   similarity_top_k=4,
                                   rerank_top_n=2,
                                   rerank_by_time=False):
-    if local := os.getenv('LOCAL_MILVUS', None):
+    if os.getenv('LOCAL_MILVUS', None):
         vector_store = MilvusVectorStore(collection_name=collection_name,
                                          dim=embedding_dimension,
-                                         overwrite=False)
+                                         overwrite=False,
+                                         uri='http://host.docker.internal:19530')
     else:
         vector_store = MilvusVectorStore(collection_name=collection_name,
                                          uri=os.getenv("ZILLIZ_CLOUD_URI"),

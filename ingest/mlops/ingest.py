@@ -1,22 +1,23 @@
 import json
+import os
+import shutil
+import tempfile
 import time
 from pathlib import Path
-import shutil
-import os
-import tempfile
 
-from langchain.document_loaders import GoogleDriveLoader, GitLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Pinecone
 import pinecone  # type: ignore
-
+from langchain.document_loaders import GoogleDriveLoader, GitLoader
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import Pinecone
 from prefect import flow, task
-from prefect_gcp import GcpCredentials
 from prefect.blocks.system import Secret
+from prefect_gcp import GcpCredentials
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-embeddings = HuggingFaceEmbeddings()
+embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
+embedding_dimension = len(embeddings.embed_query("test"))
+print(f'embedding dimension = {embedding_dimension}')
 
 
 @task(name="Index FAQ Google Document")
@@ -59,7 +60,7 @@ def create_pinecone_index(index_name: str):
         print(f"Creating index {index_name}...")
         pinecone.create_index(
             name=index_name,
-            dimension=768
+            dimension=embedding_dimension
         )
 
     print_index_status(index_name)
@@ -99,7 +100,7 @@ def get_text_splitter():
     )
 
 
-@flow(name="Update the index", log_prints=True)
+@flow(name="Update the index in Pinecone for MLOps Zoomcamp", log_prints=True)
 def create_and_fill_the_index(index_name: str,
                               google_doc_ids: list[str],
                               repo_url: str,

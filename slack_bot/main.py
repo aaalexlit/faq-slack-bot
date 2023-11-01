@@ -247,7 +247,7 @@ if __name__ == "__main__":
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     while True:
         try:
-            embeddings = HuggingFaceEmbeddings()
+            embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
             embedding_dimension = len(embeddings.embed_query("test"))
         except ChunkedEncodingError as e:
             continue

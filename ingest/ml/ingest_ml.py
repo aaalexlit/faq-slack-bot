@@ -21,7 +21,9 @@ from slack_reader import SlackReader
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-embeddings = HuggingFaceEmbeddings()
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
 
 embedding_dimension = len(embeddings.embed_query("test"))
 logger.info(f'embedding dimension = {embedding_dimension}')
@@ -74,7 +76,7 @@ def index_slack_messages():
 
 
 def add_to_index(documents, collection_name, overwrite=True):
-    node_parser = SimpleNodeParser.from_defaults(chunk_size=384, chunk_overlap=20)
+    node_parser = SimpleNodeParser.from_defaults(chunk_size=512, chunk_overlap=50)
     environment = os.getenv('EXECUTION_ENV', 'local')
     if environment == 'local':
         milvus_vector_store = MilvusVectorStore(collection_name=collection_name,

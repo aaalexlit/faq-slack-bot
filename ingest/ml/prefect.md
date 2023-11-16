@@ -33,5 +33,5 @@ prefect deploy --all
 Now all the deployments can be run from the Prefect Clouf UI
 It's also possible to run it from the command line
 ```shell
-prefect deployment run 'Update ML info Milvus index/fill-index-zilliz' -p param_name=param_value
+prefect deployment run 'Update ML info Milvus index/fill-index-zilliz'
 ```

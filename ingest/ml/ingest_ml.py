@@ -5,6 +5,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 from langchain.document_loaders import GoogleDriveLoader
 from langchain.embeddings import HuggingFaceEmbeddings
@@ -47,17 +48,37 @@ def index_google_doc():
                                document_ids=document_ids)
     raw_docs = loader.load()
     temp_creds.close()
-    add_to_index([Document.from_langchain_format(doc) for doc in raw_docs],
+
+    documents = [Document.from_langchain_format(doc) for doc in raw_docs]
+    add_route_to_docs(documents, 'faq')
+    add_to_index(documents,
                  collection_name=FAQ_COLLECTION_NAME)
 
 
 @task(name="Index course schedule")
 def index_course_schedule():
-    url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkEwMv5OKwCdPfW6LgqQvKk48dZjPcFDrjDstBqZfq38UPadh0Nws1b57qOVYwzAjSufKnVf7umGWH/pubhtml'
+    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
+           '-1vSkEwMv5OKwCdPfW6LgqQvKk48dZjPcFDrjDstBqZfq38UPadh0Nws1b57qOVYwzAjSufKnVf7umGWH/pubhtml')
     documents = TrafilaturaWebReader().load_data([url])
     for doc in documents:
         doc.metadata['title'] = 'ML Zoomcamp 2023 syllabus and deadlines'
         doc.metadata['source'] = url
+    add_route_to_docs(documents, 'faq')
+    add_to_index(documents,
+                 collection_name=FAQ_COLLECTION_NAME,
+                 overwrite=False
+                 )
+
+
+@task(name="Index project evaluation criteria")
+def index_evaluation_criteria():
+    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
+           '-1vQCwqAtkjl07MTW-SxWUK9GUvMQ3Pv_fF8UadcuIYLgHa0PlNu9BRWtfLgivI8xSCncQs82HDwGXSm3/pubhtml')
+    documents = TrafilaturaWebReader().load_data([url])
+    for doc in documents:
+        doc.metadata['title'] = 'ML Zoomcamp project evaluation criteria : Project criteria'
+        doc.metadata['source'] = url
+    add_route_to_docs(documents, 'faq')
     add_to_index(documents,
                  collection_name=FAQ_COLLECTION_NAME,
                  overwrite=False
@@ -72,10 +93,16 @@ def index_slack_messages():
                                slack_token=Secret.load('slack-bot-token').get())
 
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
+    add_route_to_docs(documents, 'slack')
     add_to_index(documents, collection_name=SLACK_COLLECTION_NAME)
 
 
-def add_to_index(documents, collection_name, overwrite=True):
+def add_route_to_docs(docs: List[Document], route_name: str):
+    for doc in docs:
+        doc.metadata['route'] = route_name
+
+
+def add_to_index(documents: List[Document], collection_name: str, overwrite: bool = True):
     node_parser = SimpleNodeParser.from_defaults(chunk_size=512, chunk_overlap=50)
     environment = os.getenv('EXECUTION_ENV', 'local')
     if environment == 'local':
@@ -99,4 +126,9 @@ def fill_ml_index():
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
     index_google_doc()
     index_course_schedule()
+    index_evaluation_criteria()
     index_slack_messages()
+
+
+if __name__ == '__main__':
+    fill_ml_index()

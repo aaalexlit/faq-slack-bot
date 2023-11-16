@@ -13,11 +13,12 @@ from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDe
 from llama_index.indices.postprocessor import (
     TimeWeightedPostprocessor
 )
-from llama_index.indices.postprocessor.cohere_rerank import CohereRerank
+from llama_index.postprocessor import CohereRerank
 from llama_index.query_engine import RouterQueryEngine
 from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
 from llama_index.tools import QueryEngineTool
-from llama_index.vector_stores import MilvusVectorStore
+from llama_index.vector_stores import MilvusVectorStore, MetadataFilters
+from llama_index.vector_stores.types import ExactMatchFilter
 from requests.exceptions import ChunkedEncodingError
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -42,7 +43,8 @@ ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
 ML_FAQ_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course FAQ document as well as "
-                           "information about course syllabus and deadlines, schedule in other words")
+                           "information about course syllabus and deadlines, schedule in other words. "
+                           "Also, it contains midterm and capstone project evaluation criteria")
 ML_SLACK_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course "
                              "slack channel history especially the questions about homework "
                              "or when it's not likely to appear in the FAQ document")
@@ -166,17 +168,19 @@ def setup_mlops_index():
     return pinecone_index
 
 
-def get_query_engine_tool_by_name(collection_name,
-                                  service_context,
-                                  description,
-                                  similarity_top_k=4,
-                                  rerank_top_n=2,
-                                  rerank_by_time=False):
+def get_query_engine_tool_by_name(collection_name: str,
+                                  service_context: ServiceContext,
+                                  description: str,
+                                  route: str = None,
+                                  similarity_top_k: int = 4,
+                                  rerank_top_n: int = 2,
+                                  rerank_by_time: bool = False):
     if os.getenv('LOCAL_MILVUS', None):
+        localhost = os.getenv('LOCALHOST', 'localhost')
         vector_store = MilvusVectorStore(collection_name=collection_name,
                                          dim=embedding_dimension,
                                          overwrite=False,
-                                         uri='http://host.docker.internal:19530')
+                                         uri=f'http://{localhost}:19530')
     else:
         vector_store = MilvusVectorStore(collection_name=collection_name,
                                          uri=os.getenv("ZILLIZ_CLOUD_URI"),
@@ -192,18 +196,27 @@ def get_query_engine_tool_by_name(collection_name,
         key = 'thread_ts'
         recency_postprocessor = TimeWeightedPostprocessor(
             last_accessed_key=key,
-            time_decay=0.02,
+            time_decay=0.4,
             time_access_refresh=False,
             top_k=10
         )
         node_postprocessors.insert(0, recency_postprocessor)
 
+    if route:
+        filters = MetadataFilters(
+            filters=[ExactMatchFilter(key="route", value=route)]
+        )
+    else:
+        filters = None
+
     return QueryEngineTool.from_defaults(
         query_engine=vector_store_index.as_query_engine(
             similarity_top_k=similarity_top_k,
             node_postprocessors=node_postprocessors,
+            filters=filters,
         ),
         description=description,
+        name=route
     )
 
 
@@ -220,14 +233,16 @@ def get_ml_query_engine():
                                                    llm=ChatOpenAI(model='gpt-3.5-turbo', temperature=0.4))
     faq_tool = get_query_engine_tool_by_name(collection_name=ML_FAQ_COLLECTION_NAME,
                                              service_context=service_context,
-                                             description=ML_FAQ_TOOL_DESCRIPTION)
+                                             description=ML_FAQ_TOOL_DESCRIPTION,
+                                             route='faq')
 
     slack_tool = get_query_engine_tool_by_name(collection_name=ML_SLACK_COLLECTION_NAME,
                                                service_context=service_context,
                                                description=ML_SLACK_TOOL_DESCRIPTION,
                                                similarity_top_k=20,
                                                rerank_top_n=3,
-                                               rerank_by_time=True)
+                                               rerank_by_time=True,
+                                               route='slack')
 
     # Create the multi selector query engine
     return RouterQueryEngine(

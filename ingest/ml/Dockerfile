@@ -4,7 +4,6 @@ RUN apt-get update && \
     apt-get install -y gcc  python3-dev
 
 RUN pip install -U pip
-RUN pip install pipenv
 
 WORKDIR /usr/src/app
 

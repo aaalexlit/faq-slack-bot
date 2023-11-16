@@ -9,7 +9,8 @@ from typing import List
 
 from langchain.document_loaders import GoogleDriveLoader
 from langchain.embeddings import HuggingFaceEmbeddings
-from llama_index import StorageContext, VectorStoreIndex, ServiceContext, TrafilaturaWebReader
+from llama_index import StorageContext, VectorStoreIndex, ServiceContext
+from llama_index.readers import TrafilaturaWebReader
 from llama_index.node_parser import SimpleNodeParser
 from llama_index.readers import Document
 from llama_index.vector_stores import MilvusVectorStore

@@ -44,6 +44,10 @@ def create_slack_secrets():
     create_secret_block('slack-bot-token', 'SLACK_BOT_TOKEN')
 
 
+def create_github_secrets():
+    create_secret_block('github-token', 'GITHUB_TOKEN')
+
+
 if __name__ == '__main__':
     create_gcp_creds_block()
     time.sleep(10)
@@ -52,3 +56,5 @@ if __name__ == '__main__':
     create_zilliz_secrets()
     time.sleep(10)
     create_slack_secrets()
+    time.sleep(10)
+    create_github_secrets()

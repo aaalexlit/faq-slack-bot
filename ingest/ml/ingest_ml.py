@@ -53,7 +53,9 @@ def index_google_doc():
     documents = [Document.from_langchain_format(doc) for doc in raw_docs]
     add_route_to_docs(documents, 'faq')
     add_to_index(documents,
-                 collection_name=FAQ_COLLECTION_NAME)
+                 collection_name=FAQ_COLLECTION_NAME,
+                 overwrite=True,
+                 )
 
 
 @task(name="Index course schedule")
@@ -65,10 +67,7 @@ def index_course_schedule():
         doc.metadata['title'] = 'ML Zoomcamp 2023 syllabus and deadlines'
         doc.metadata['source'] = url
     add_route_to_docs(documents, 'faq')
-    add_to_index(documents,
-                 collection_name=FAQ_COLLECTION_NAME,
-                 overwrite=False
-                 )
+    add_to_index(documents, collection_name=FAQ_COLLECTION_NAME)
 
 
 @task(name="Index project evaluation criteria")
@@ -80,10 +79,7 @@ def index_evaluation_criteria():
         doc.metadata['title'] = 'ML Zoomcamp project evaluation criteria : Project criteria'
         doc.metadata['source'] = url
     add_route_to_docs(documents, 'faq')
-    add_to_index(documents,
-                 collection_name=FAQ_COLLECTION_NAME,
-                 overwrite=False
-                 )
+    add_to_index(documents, collection_name=FAQ_COLLECTION_NAME)
 
 
 @task(name="Index slack messages")
@@ -95,7 +91,10 @@ def index_slack_messages():
 
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
     add_route_to_docs(documents, 'slack')
-    add_to_index(documents, collection_name=SLACK_COLLECTION_NAME)
+    add_to_index(documents,
+                 collection_name=SLACK_COLLECTION_NAME,
+                 overwrite=True,
+                 )
 
 
 def add_route_to_docs(docs: List[Document], route_name: str):
@@ -103,7 +102,7 @@ def add_route_to_docs(docs: List[Document], route_name: str):
         doc.metadata['route'] = route_name
 
 
-def add_to_index(documents: List[Document], collection_name: str, overwrite: bool = True):
+def add_to_index(documents: List[Document], collection_name: str, overwrite: bool = False):
     node_parser = SimpleNodeParser.from_defaults(chunk_size=512, chunk_overlap=50)
     environment = os.getenv('EXECUTION_ENV', 'local')
     if environment == 'local':

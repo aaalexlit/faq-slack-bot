@@ -16,3 +16,4 @@ llama-index
 pipenv
 cohere
 trafilatura
+nbconvert

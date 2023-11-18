@@ -88,7 +88,7 @@ def index_evaluation_criteria():
 
 @task(name="Index slack messages")
 def index_slack_messages():
-    slack_reader = SlackReader(earliest_date=datetime(2022, 9, 1),
+    slack_reader = SlackReader(earliest_date=datetime(2023, 8, 1),
                                bot_user_id=BOT_USER_ID,
                                not_ignore_users=[AU_TOMATOR_USER_ID],
                                slack_token=Secret.load('slack-bot-token').get())

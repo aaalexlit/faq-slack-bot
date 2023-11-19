@@ -10,3 +10,4 @@ pymilvus
 llama-index
 trafilatura
 nbconvert
+ipython

@@ -250,3 +250,5 @@ wandb/
 **/volumes
 
 /ingest/ml/build_docker_image.md
+
+*.ipynb

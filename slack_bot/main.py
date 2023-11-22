@@ -42,6 +42,8 @@ MLOPS_INDEX_NAME = 'mlops-faq-bot'
 ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
+GPT_MODEL_NAME = 'gpt-3.5-turbo-1106'
+
 ML_FAQ_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course FAQ document as well as "
                            "information about course syllabus and deadlines, schedule in other words. "
                            "Also, it contains midterm and capstone project evaluation criteria")
@@ -230,7 +232,8 @@ def get_ml_query_engine():
     callback_manager = init_llama_index_callback_manager()
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                    callback_manager=callback_manager,
-                                                   llm=ChatOpenAI(model='gpt-3.5-turbo', temperature=0.4))
+                                                   llm=ChatOpenAI(model=GPT_MODEL_NAME,
+                                                                  temperature=0.4))
     faq_tool = get_query_engine_tool_by_name(collection_name=ML_FAQ_COLLECTION_NAME,
                                              service_context=service_context,
                                              description=ML_FAQ_TOOL_DESCRIPTION,
@@ -245,13 +248,18 @@ def get_ml_query_engine():
                                                route='slack')
 
     # Create the multi selector query engine
+    # Set llm temperature to 0 for routing
+    router_service_context = ServiceContext.from_defaults(embed_model=embeddings,
+                                                          callback_manager=callback_manager,
+                                                          llm=ChatOpenAI(model=GPT_MODEL_NAME,
+                                                                         temperature=0))
     return RouterQueryEngine(
         selector=PydanticMultiSelector.from_defaults(verbose=True),
         query_engine_tools=[
             slack_tool,
             faq_tool,
         ],
-        service_context=service_context
+        service_context=router_service_context
     )
 
 
@@ -274,7 +282,7 @@ if __name__ == "__main__":
     mlops_index = setup_mlops_index()
 
     mlops_qa = RetrievalQA.from_chain_type(
-        llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
+        llm=ChatOpenAI(model_name=GPT_MODEL_NAME),
         retriever=mlops_index.as_retriever()
     )
 

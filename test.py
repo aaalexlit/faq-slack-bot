@@ -21,7 +21,7 @@ def main(question):
     pinecone_index = Pinecone.from_existing_index(index_name='mlops-faq-bot',
                                                   embedding=embeddings)
     qa = RetrievalQA.from_chain_type(
-        llm=ChatOpenAI(model_name='gpt-3.5-turbo'),
+        llm=ChatOpenAI(model_name='gpt-3.5-turbo-1106'),
         retriever=pinecone_index.as_retriever()
     )
     qa.return_source_documents = True

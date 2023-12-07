@@ -230,10 +230,11 @@ def init_llama_index_callback_manager():
 
 def get_ml_query_engine():
     callback_manager = init_llama_index_callback_manager()
+    # Set llm temperature to 0.7 for generation
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                    callback_manager=callback_manager,
                                                    llm=ChatOpenAI(model=GPT_MODEL_NAME,
-                                                                  temperature=0.4))
+                                                                  temperature=0.7))
     faq_tool = get_query_engine_tool_by_name(collection_name=ML_FAQ_COLLECTION_NAME,
                                              service_context=service_context,
                                              description=ML_FAQ_TOOL_DESCRIPTION,
@@ -248,11 +249,11 @@ def get_ml_query_engine():
                                                route='slack')
 
     # Create the multi selector query engine
-    # Set llm temperature to 0 for routing
+    # Set llm temperature to 0.4 for routing
     router_service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                           callback_manager=callback_manager,
                                                           llm=ChatOpenAI(model=GPT_MODEL_NAME,
-                                                                         temperature=0))
+                                                                         temperature=0.4))
     return RouterQueryEngine(
         selector=PydanticMultiSelector.from_defaults(verbose=True),
         query_engine_tools=[

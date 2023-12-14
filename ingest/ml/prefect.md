@@ -30,7 +30,7 @@ Create all the deployments from [prefect.yaml](prefect.yaml) file
 prefect deploy --all
 ```
 
-Now all the deployments can be run from the Prefect Clouf UI
+Now all the deployments can be run from the Prefect Cloud UI
 It's also possible to run it from the command line
 ```shell
 prefect deployment run 'Update ML info Milvus index/fill-index-zilliz'

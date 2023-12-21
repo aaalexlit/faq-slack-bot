@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from datetime import datetime
+from http.client import IncompleteRead
 from ssl import SSLContext
 from typing import Any, List, Optional
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class SlackReader(BasePydanticReader):
     """Slack reader.
 
-    Reads conversations from channels. If an earliest_date is provided, an
+    Reads conversations from channels. If the earliest_date is provided, an
     optional latest_date can also be provided. If no latest_date is provided,
     we assume the latest date is the current timestamp.
 
@@ -136,7 +137,8 @@ class SlackReader(BasePydanticReader):
             except SlackApiError as e:
                 self.sleep_on_ratelimit(e)
 
-        return Document(text="\n\n".join(messages_text), metadata={"channel": channel_id, "thread_ts": float(message_ts)})
+        return Document(text="\n\n".join(messages_text),
+                        metadata={"channel": channel_id, "thread_ts": float(message_ts)})
 
     def _read_channel(self, channel_id: str) -> List[Document]:
         from slack_sdk.errors import SlackApiError
@@ -177,6 +179,8 @@ class SlackReader(BasePydanticReader):
 
             except SlackApiError as e:
                 self.sleep_on_ratelimit(e)
+            except IncompleteRead:
+                continue
 
         return thread_documents
 

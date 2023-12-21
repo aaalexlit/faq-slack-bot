@@ -10,7 +10,7 @@ from typing import List
 from langchain.document_loaders import GoogleDriveLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 from llama_index import StorageContext, VectorStoreIndex, ServiceContext
-from llama_index.node_parser import SimpleNodeParser
+from llama_index.node_parser import NodeParser, SentenceSplitter
 from llama_index.readers import Document
 from llama_index.readers import TrafilaturaWebReader, GithubRepositoryReader
 from llama_index.vector_stores import MilvusVectorStore
@@ -149,8 +149,12 @@ def add_route_to_docs(docs: List[Document], route_name: str):
         doc.metadata['route'] = route_name
 
 
-def add_to_index(documents: List[Document], collection_name: str, overwrite: bool = False):
-    node_parser = SimpleNodeParser.from_defaults(chunk_size=512, chunk_overlap=50)
+def add_to_index(documents: List[Document],
+                 collection_name: str,
+                 overwrite: bool = False,
+                 node_parser: NodeParser = None):
+    if not node_parser:
+        node_parser = SentenceSplitter.from_defaults(chunk_size=512, chunk_overlap=50)
     environment = os.getenv('EXECUTION_ENV', 'local')
     if environment == 'local':
         milvus_vector_store = MilvusVectorStore(collection_name=collection_name,

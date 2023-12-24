@@ -1,11 +1,13 @@
-steps to fill in the index locally:
+Steps to fill in the index locally:
 
-1. start dockerized milvus
+1. start dockerized [Milvus](https://milvus.io/) from [local_milvus](../local_milvus) folder
     ```shell
-     docker compose -f milvus-standalone-docker-compose.yml up    
+     cd ingest/local_milvus
+     docker compose up    
     ```
    
-1. execute. It will be executed with `EXECUTION_ENV` env var set to `local` by default
+1. execute ingestion script. 
+It will be executed with `EXECUTION_ENV` env var set to `local` by default
    ```shell
    python ingest_ml.py
    ```

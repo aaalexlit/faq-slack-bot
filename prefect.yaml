@@ -1,0 +1,67 @@
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
+# Generic metadata about this project
+name: ml
+prefect-version: 2.13.4
+
+# build section allows you to manage and build docker images
+build:
+
+# push section allows you to manage if and how this project is uploaded to remote locations
+push:
+- prefect_docker.deployments.steps.push_docker_image:
+    requires: prefect-docker>=0.3.1
+    image_name: '{{ build_image.image_name }}'
+    tag: '{{ build_image.tag }}'
+
+# pull section allows you to provide instructions for cloning this project in remote locations
+pull:
+
+
+definitions:
+  work_pools:
+    zoomcamp_faq_bot_workpool: &zoomcamp-faq-bot-pool
+      name: zoomcamp-faq-bot
+      work_queue_name: docker_queue
+      job_variables:
+        image: '{{ build_image.image }}'
+        env:
+          EXECUTION_ENV: milvus
+  schedules:
+    at_23_daily: &at_23_daily
+      cron: 0 23 * * *
+      timezone: Europe/Madrid
+      day_or: true
+  actions:
+    docker_build: &docker_build
+    - prefect.deployments.steps.run_shell_script:
+        id: get-commit-hash
+        script: git rev-parse --short HEAD
+        stream_output: false
+    - prefect_docker.deployments.steps.build_docker_image: &docker_build_config
+        id: build_image
+        requires: prefect-docker>=0.3.1
+        tag: '{{ get-commit-hash.stdout }}'
+        platform: linux/amd64
+
+
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+- name: fill-index-zilliz-ml
+  tags:
+  - ml-ingest
+  - zoomcamp-faq-bot
+  description: Fill Zilliz index for ML Zoomcamp
+  schedule: *at_23_daily
+  entrypoint: ingest/ml/ingest_ml.py:fill_ml_index
+  work_pool: *zoomcamp-faq-bot-pool
+  build:
+  - prefect_docker.deployments.steps.build_docker_image:
+      <<: *docker_build_config # Uses the docker_build_config alias and overrides the dockerfile field
+      dockerfile: ingest/ml.dockerfile
+      image_name: aaalexlit/zoomcamp-faq-ingest-ml
+  pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /usr/src

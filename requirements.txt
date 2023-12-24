@@ -17,3 +17,4 @@ pipenv
 cohere
 trafilatura
 nbconvert
+prefect-docker

@@ -18,7 +18,7 @@ from prefect import flow, task
 from prefect.blocks.system import Secret
 from prefect_gcp import GcpCredentials
 
-from slack_reader import SlackReader
+from ingest.readers.slack_reader import SlackReader
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)

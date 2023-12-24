@@ -13,7 +13,7 @@ prefect deployment run 'Update ML info Milvus index/fill-index-zilliz'
 ## Change the properties of the current deployment 
 
 Depending on the nature of the changes, after modifying the code or 
-[prefect.yaml](prefect.yaml) re-create the deployment by running
+[prefect.yaml](../../prefect.yaml) re-create the deployment by running
 
 ```shell
 prefect deploy --all
@@ -45,7 +45,7 @@ Run the following command in this new terminal to start the worker:
 prefect worker start --pool zoomcamp-faq-bot
 ```
 
-Create all the deployments from [prefect.yaml](prefect.yaml) file
+Create all the deployments from [prefect.yaml](../../prefect.yaml) file
 
 ```shell
 prefect deploy --all

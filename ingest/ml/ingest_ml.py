@@ -1,7 +1,5 @@
 import json
-import logging
 import os
-import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -20,15 +18,12 @@ from prefect_gcp import GcpCredentials
 
 from ingest.readers.slack_reader import SlackReader
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
 
 embedding_dimension = len(embeddings.embed_query("test"))
-logger.info(f'embedding dimension = {embedding_dimension}')
+print(f'embedding dimension = {embedding_dimension}')
 
 BOT_USER_ID = 'U05DM3PEJA2'
 AU_TOMATOR_USER_ID = 'U01S08W6Z9T'
@@ -87,7 +82,8 @@ def index_book_github_repo():
 @task(name="Index FAQ Google Document")
 def index_google_doc():
     document_ids = ["1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8"]
-    logger.info('Loading google doc...')
+    print('Loading google doc...')
+
     temp_creds = tempfile.NamedTemporaryFile()
     creds_dict = GcpCredentials.load("google-drive-creds").service_account_info.get_secret_value()
     with open(temp_creds.name, 'w') as f_out:

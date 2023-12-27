@@ -15,6 +15,7 @@ from llama_index.schema import Document
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format='%(message)s')
 logger = logging.getLogger(__name__)
+EXCLUDED_METADATA_FIELDS = ['channel', 'thread_ts']
 
 
 class SlackReader(BasePydanticReader):
@@ -44,6 +45,7 @@ class SlackReader(BasePydanticReader):
     not_ignore_users: Optional[list[str]] = []
 
     _client: Any = PrivateAttr()
+
 
     def __init__(
             self,
@@ -138,7 +140,10 @@ class SlackReader(BasePydanticReader):
                 self.sleep_on_ratelimit(e)
 
         return Document(text="\n\n".join(messages_text),
-                        metadata={"channel": channel_id, "thread_ts": float(message_ts)})
+                        metadata={"channel": channel_id, "thread_ts": float(message_ts)},
+                        excluded_embed_metadata_keys=EXCLUDED_METADATA_FIELDS,
+                        excluded_llm_metadata_keys=EXCLUDED_METADATA_FIELDS
+                        )
 
     def _read_channel(self, channel_id: str) -> List[Document]:
         from slack_sdk.errors import SlackApiError

@@ -2,10 +2,8 @@ import json
 import os
 import tempfile
 from datetime import datetime
-from pathlib import Path
 from typing import List
 
-from langchain.document_loaders import GoogleDriveLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 from llama_index import StorageContext, VectorStoreIndex, ServiceContext
 from llama_index.node_parser import NodeParser, SentenceSplitter
@@ -16,6 +14,7 @@ from prefect import flow, task
 from prefect.blocks.system import Secret
 from prefect_gcp import GcpCredentials
 
+from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
 from ingest.readers.slack_reader import SlackReader
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -29,7 +28,6 @@ BOT_USER_ID = 'U05DM3PEJA2'
 AU_TOMATOR_USER_ID = 'U01S08W6Z9T'
 ML_CHANNEL_ID = 'C0288NJ5XSA'
 FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
-SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
 
 
 def index_github_repo(owner: str,
@@ -88,12 +86,12 @@ def index_google_doc():
     creds_dict = GcpCredentials.load("google-drive-creds").service_account_info.get_secret_value()
     with open(temp_creds.name, 'w') as f_out:
         json.dump(creds_dict, f_out)
-    loader = GoogleDriveLoader(service_account_key=Path(temp_creds.name),
-                               document_ids=document_ids)
-    raw_docs = loader.load()
+
+    gdocs_reader = FAQGoogleDocsReader(service_account_json_path=temp_creds.name)
+    documents = gdocs_reader.load_data(document_ids=document_ids)
+
     temp_creds.close()
 
-    documents = [Document.from_langchain_format(doc) for doc in raw_docs]
     add_route_to_docs(documents, 'faq')
     add_to_index(documents,
                  collection_name=FAQ_COLLECTION_NAME,
@@ -135,14 +133,17 @@ def index_slack_messages():
     documents = slack_reader.load_data(channel_ids=[ML_CHANNEL_ID])
     add_route_to_docs(documents, 'slack')
     add_to_index(documents,
-                 collection_name=SLACK_COLLECTION_NAME,
-                 overwrite=True,
+                 collection_name=FAQ_COLLECTION_NAME,
+                 overwrite=False,
                  )
 
 
 def add_route_to_docs(docs: List[Document], route_name: str):
+    route_key_name = 'route'
     for doc in docs:
-        doc.metadata['route'] = route_name
+        doc.metadata[route_key_name] = route_name
+        doc.excluded_embed_metadata_keys.append(route_key_name)
+        doc.excluded_llm_metadata_keys.append(route_key_name)
 
 
 def add_to_index(documents: List[Document],

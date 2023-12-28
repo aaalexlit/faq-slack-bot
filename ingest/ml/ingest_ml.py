@@ -165,15 +165,17 @@ def add_to_index(documents: List[Document],
                                                 overwrite=overwrite)
     storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
     service_context = ServiceContext.from_defaults(embed_model=embeddings, node_parser=node_parser, llm=None)
-    VectorStoreIndex.from_documents(documents, storage_context=storage_context,
-                                    service_context=service_context)
+    VectorStoreIndex.from_documents(documents,
+                                    storage_context=storage_context,
+                                    service_context=service_context,
+                                    show_progress=True)
 
 
 @flow(name="Update ML info Milvus index", log_prints=True)
 def fill_ml_index():
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
-    index_slack_messages.submit()
     index_google_doc()
+    index_slack_messages.submit(wait_for=[index_google_doc])
     index_course_schedule.submit(wait_for=[index_google_doc])
     index_evaluation_criteria.submit(wait_for=[index_google_doc])
     index_course_github_repo.submit(wait_for=[index_google_doc])

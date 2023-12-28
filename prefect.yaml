@@ -4,7 +4,7 @@
 
 # Generic metadata about this project
 name: ml
-prefect-version: 2.13.4
+prefect-version: 2.14.12
 
 # build section allows you to manage and build docker images
 build:
@@ -28,7 +28,7 @@ definitions:
       job_variables:
         image: '{{ build_image.image }}'
         env:
-          EXECUTION_ENV: milvus
+          EXECUTION_ENV: zilliz
   schedules:
     at_23_daily: &at_23_daily
       cron: 0 23 * * *

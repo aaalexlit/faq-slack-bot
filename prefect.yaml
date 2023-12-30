@@ -34,6 +34,10 @@ definitions:
       cron: 0 23 * * *
       timezone: Europe/Madrid
       day_or: true
+    at_1_daily: &at_1_daily
+      cron: 0 1 * * *
+      timezone: Europe/Madrid
+      day_or: true
   actions:
     docker_build: &docker_build
       - prefect.deployments.steps.run_shell_script: &shell-script-config
@@ -63,6 +67,23 @@ deployments:
           <<: *docker-build-config # Uses the docker_build_config and overrides the dockerfile and image_name fields
           dockerfile: ingest/ml.dockerfile
           image_name: aaalexlit/zoomcamp-faq-ingest-ml
+    pull:
+      - prefect.deployments.steps.set_working_directory:
+          directory: /usr/src
+  - name: fill-index-zilliz-de
+    tags:
+      - de-ingest
+      - zoomcamp-faq-bot
+    description: Fill Zilliz index for DE Zoomcamp
+    schedule: *at_1_daily
+    entrypoint: ingest/de/ingest_de.py:fill_de_index
+    work_pool: *zoomcamp-faq-bot-pool
+    build:
+      - prefect.deployments.steps.run_shell_script: *shell-script-config
+      - prefect_docker.deployments.steps.build_docker_image:
+          <<: *docker-build-config # Uses the docker_build_config and overrides the dockerfile and image_name fields
+          dockerfile: ingest/de.dockerfile
+          image_name: aaalexlit/zoomcamp-faq-ingest-de
     pull:
       - prefect.deployments.steps.set_working_directory:
           directory: /usr/src

@@ -12,3 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ingest/ml/ingest_ml.py ingest/ml/
 COPY ingest/readers ingest/readers
+COPY ingest/utils ingest/utils

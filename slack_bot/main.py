@@ -30,17 +30,19 @@ logging.basicConfig(stream=sys.stdout,
                     datefmt='%d-%m-%Y %H:%M:%S', )
 logger = logging.getLogger(__name__)
 
-MLOPS_CHANNEL_ID = "C02R98X7DS9"
-ML_CHANNEL_ID = "C0288NJ5XSA"
-TEST_WS_CHANNEL_ID = os.getenv('TEST_WS_CHANNEL_ID', '')
-TEST_CHANNEL_ID = os.getenv('TEST_CHANNEL_ID', '')
+DE_CHANNELS = ['C01FABYF2RG', 'C06CBSE16JC', 'C06BZJX8PSP']
+ML_CHANNELS = ['C0288NJ5XSA', 'C05C3SGMLBB', 'C05DTQECY66']
+MLOPS_CHANNELS = ['C02R98X7DS9', 'C06C1N46CQ1']
+
+ALLOWED_CHANNELS = DE_CHANNELS + ML_CHANNELS + MLOPS_CHANNELS
 
 PROJECT_NAME = 'datatalks-faq-slackbot'
 ML_ZOOMCAMP_PROJECT_NAME = 'ml-zoomcamp-slack-bot'
+DE_ZOOMCAMP_PROJECT_NAME = 'de-zoomcamp-slack-bot'
 
 MLOPS_INDEX_NAME = 'mlops-faq-bot'
 ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
-ML_SLACK_COLLECTION_NAME = 'mlzoomcamp_slack'
+DE_FAQ_COLLECTION_NAME = 'dezoomcamp_faq_git'
 
 GPT_MODEL_NAME = 'gpt-3.5-turbo-0613'
 
@@ -68,7 +70,7 @@ def handle_message_events(body):
     channel_id = body["event"]["channel"]
     event_ts = body["event"]["event_ts"]
 
-    if channel_id not in [ML_CHANNEL_ID, MLOPS_CHANNEL_ID, TEST_WS_CHANNEL_ID, TEST_CHANNEL_ID]:
+    if channel_id not in ALLOWED_CHANNELS:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text="Apologies, I can't answer questions in this channel")
@@ -85,10 +87,12 @@ def handle_message_events(body):
                             thread_ts=event_ts,
                             text=greeting_message)
     try:
-        if channel_id in [MLOPS_CHANNEL_ID]:
+        if channel_id in MLOPS_CHANNELS:
             response = mlops_qa.run(question)
-        else:
+        elif channel_id in ML_CHANNELS:
             response = ml_query_engine.query(question)
+        else:
+            response = de_query_engine.query(question)
 
         if hasattr(response, "source_nodes"):
             sources = links_to_source_nodes(response)
@@ -147,22 +151,24 @@ def remove_mentions(input_text):
 
 
 def get_greeting_message(channel_id):
-    message_template = "Hello from {name}FAQ Bot! :robot_face: \n" \
-                       "Please note that this is an alpha version " \
-                       "and the answers might not be accurate since I'm " \
-                       "just a human-friendly interface to the {name} Zoomcamp FAQ " \
-                       "document that can be found in the " \
-                       "<https://docs.google.com/document/d/{link}|following link>" \
-                       " {additional_message}." \
+    message_template = "Hello from {name} FAQ Bot! :robot_face: \n" \
+                       "Please note that I'm under active development. " \
+                       "The answers might not be accurate since I'm " \
+                       "just a human-friendly interface to the " \
+                       "<https://docs.google.com/document/d/{link}| {name} Zoomcamp FAQ>" \
+                       "{additional_message}." \
                        "\nThanks for your request, I'm on it!"
-    if channel_id == MLOPS_CHANNEL_ID:
+    additional_message = ", this Slack channel, and this course's GitHub repo"
+    if channel_id in MLOPS_CHANNELS:
         name = 'MLOps'
         link = '12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d'
-        additional_message = "and also this course's github repository"
-    else:
+        additional_message = " and also this course's github repository"
+    elif channel_id in ML_CHANNELS:
         name = 'ML'
         link = '1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8/edit#heading=h.98qq6wfuzeck'
-        additional_message = 'and also this Slack channel'
+    else:
+        name = 'DE'
+        link = '19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw/edit#heading=h.o29af0z8xx88'
     return message_template.format(name=name, link=link, additional_message=additional_message)
 
 
@@ -243,14 +249,14 @@ def get_query_engine_tool_by_name(collection_name: str,
     )
 
 
-def init_llama_index_callback_manager():
+def init_llama_index_callback_manager(project_name):
     llama_debug = LlamaDebugHandler(print_trace_on_end=True)
-    wandb_callback = WandbCallbackHandler(run_args=dict(project=ML_ZOOMCAMP_PROJECT_NAME))
+    wandb_callback = WandbCallbackHandler(run_args=dict(project=project_name))
     return CallbackManager([wandb_callback, llama_debug])
 
 
 def get_ml_router_query_engine():
-    callback_manager = init_llama_index_callback_manager()
+    callback_manager = init_llama_index_callback_manager(ML_ZOOMCAMP_PROJECT_NAME)
     # Set llm temperature to 0.7 for generation
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                    callback_manager=callback_manager,
@@ -270,7 +276,7 @@ def get_ml_router_query_engine():
                                                 route='github',
                                                 )
 
-    slack_tool = get_query_engine_tool_by_name(collection_name=ML_SLACK_COLLECTION_NAME,
+    slack_tool = get_query_engine_tool_by_name(collection_name=ML_FAQ_COLLECTION_NAME,
                                                service_context=service_context,
                                                description=ML_SLACK_TOOL_DESCRIPTION,
                                                similarity_top_k=20,
@@ -296,31 +302,38 @@ def get_ml_router_query_engine():
     )
 
 
+def get_de_retriever_query_engine():
+    callback_manager = init_llama_index_callback_manager(DE_ZOOMCAMP_PROJECT_NAME)
+    return get_retriever_query_engine(callback_manager, DE_FAQ_COLLECTION_NAME)
+
+
 def get_ml_retriever_query_engine():
-    callback_manager = init_llama_index_callback_manager()
+    callback_manager = init_llama_index_callback_manager(ML_ZOOMCAMP_PROJECT_NAME)
+    return get_retriever_query_engine(callback_manager, ML_FAQ_COLLECTION_NAME)
+
+
+def get_retriever_query_engine(callback_manager, collection_name):
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
                                                    callback_manager=callback_manager,
                                                    llm=ChatOpenAI(model=GPT_MODEL_NAME,
                                                                   temperature=0.7))
     if os.getenv('LOCAL_MILVUS', None):
         localhost = os.getenv('LOCALHOST', 'localhost')
-        vector_store = MilvusVectorStore(collection_name=ML_FAQ_COLLECTION_NAME,
+        vector_store = MilvusVectorStore(collection_name=collection_name,
                                          dim=embedding_dimension,
                                          overwrite=False,
                                          uri=f'http://{localhost}:19530')
     else:
-        vector_store = MilvusVectorStore(collection_name=ML_FAQ_COLLECTION_NAME,
+        vector_store = MilvusVectorStore(collection_name=collection_name,
                                          uri=os.getenv("ZILLIZ_CLOUD_URI"),
                                          token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
                                          dim=embedding_dimension,
                                          overwrite=False)
     vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
                                                             service_context=service_context)
-
     cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=4)
     recency_postprocessor = get_time_weighted_postprocessor()
     node_postprocessors = [recency_postprocessor, cohere_rerank]
-
     return RetrieverQueryEngine(vector_store_index.as_retriever(similarity_top_k=10),
                                 node_postprocessors=node_postprocessors,
                                 callback_manager=callback_manager)
@@ -348,7 +361,6 @@ if __name__ == "__main__":
             continue
         break
 
-    log_langchain_to_wandb()
     log_to_langsmith()
 
     mlops_index = setup_mlops_index()
@@ -359,5 +371,7 @@ if __name__ == "__main__":
     )
 
     ml_query_engine = get_ml_retriever_query_engine()
+
+    de_query_engine = get_de_retriever_query_engine()
 
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

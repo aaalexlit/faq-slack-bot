@@ -6,5 +6,3 @@ primary_region = "mad"
 
 [env]
   PINECONE_ENV = "gcp-starter"
-  TEST_CHANNEL_ID = "C05DTQECY66"
-  TEST_WS_CHANNEL_ID = "C05C3SGMLBB"

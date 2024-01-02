@@ -29,6 +29,8 @@ definitions:
         image: '{{ build_image.image }}'
         env:
           EXECUTION_ENV: zilliz
+        auto_remove:
+          true
   schedules:
     at_23_daily: &at_23_daily
       cron: 0 23 * * *

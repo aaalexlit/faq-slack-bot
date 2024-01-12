@@ -6,8 +6,9 @@ Steps to fill in the index locally:
      docker compose up    
     ```
    
-1. execute ingestion script. 
+1. execute ingestion script [ingest_ml.py](ingest/ml/ingest_ml.py). 
 It will be executed with `EXECUTION_ENV` env var set to `local` by default
    ```shell
+   cd ingest/ml
    python ingest_ml.py
    ```

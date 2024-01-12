@@ -130,7 +130,9 @@ class SlackReader(BasePydanticReader):
                 messages = result["messages"]
                 messages_text.extend(message["text"] for message in messages if message['user'] != self.bot_user_id)
                 messages_text.extend(message["attachments"][0]["text"] for message in messages if
-                                     message['user'] in self.not_ignore_users and "attachments" in message)
+                                     message['user'] in self.not_ignore_users
+                                     and "attachments" in message
+                                     and "text" in message["attachments"][0])
 
                 if not result["has_more"]:
                     break
@@ -228,10 +230,10 @@ class SlackReader(BasePydanticReader):
 
 
 if __name__ == "__main__":
-    reader = SlackReader(earliest_date=datetime(2023, 10, 13),
+    reader = SlackReader(earliest_date=datetime(2024, 1, 10),
                          bot_user_id='U05DM3PEJA2',
                          not_ignore_users=['U01S08W6Z9T'])
-    for thread in reader.load_data(channel_ids=["C0288NJ5XSA"]):
+    for thread in reader.load_data(channel_ids=["C01FABYF2RG"]):
         logger.info(f'Text: {thread.text}')
         logger.info(f'Metadata: {thread.metadata}')
         logger.info('----------------------------')

@@ -32,9 +32,10 @@ def index_google_doc():
 
 @task(name="Index course schedule")
 def index_course_schedule():
-    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
-           '-1vSkEwMv5OKwCdPfW6LgqQvKk48dZjPcFDrjDstBqZfq38UPadh0Nws1b57qOVYwzAjSufKnVf7umGWH/pubhtml')
-    title = 'ML Zoomcamp 2023 syllabus and deadlines'
+    url = (
+        'https://docs.google.com/spreadsheets/d/e/2PACX-1vQACMLuutV5rvXg5qICuJGL-'
+        'yZqIV0FBD84CxPdC5eZHf8TfzB-CJT_3Mo7U7oGVTXmSihPgQxuuoku/pubhtml')
+    title = 'DE Zoomcamp 2024 syllabus and deadlines'
     index_spreadsheet(url, title, FAQ_COLLECTION_NAME)
 
 
@@ -58,7 +59,7 @@ def fill_de_index():
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
     index_google_doc()
     index_slack_messages.submit(wait_for=[index_google_doc])
-    # index_course_schedule.submit(wait_for=[index_google_doc])
+    index_course_schedule.submit(wait_for=[index_google_doc])
     # index_evaluation_criteria.submit(wait_for=[index_google_doc])
     index_course_github_repo.submit(wait_for=[index_google_doc])
 

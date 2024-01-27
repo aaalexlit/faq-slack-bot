@@ -11,6 +11,6 @@ Steps to fill in the index locally:
 1. execute ingestion script [ingest_ml.py](ml/ingest_ml.py). 
 It will be executed with `EXECUTION_ENV` env var set to `local` by default
    ```shell
-   cd ingest/ml
-   python ingest_ml.py
+   export PYTHONPATH="${PYTHONPATH}:$(pwd)" 
+   python ingest/ml/ingest_ml.py
    ```

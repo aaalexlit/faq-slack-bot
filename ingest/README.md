@@ -3,7 +3,7 @@
 At the moment the indexing is scheduled to execute with [Prefect Cloud](https://app.prefect.cloud/)
 via deployments every 24 hours at 23 CET
 
-Steps to change/run the deployment are described in [prefect.md](ml/prefect.md)
+Steps to change/run the deployment are described in [prefect.md](prefect.md)
 
 ## For MLOps Zoomcamp
 

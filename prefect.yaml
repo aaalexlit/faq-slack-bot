@@ -41,6 +41,9 @@ definitions:
       timezone: Europe/Madrid
       day_or: true
     at_23_monday: &at_23_monday
+      cron: 0 23 * * 1
+      timezone: Europe/Madrid
+      day_or: true
   actions:
     docker_build: &docker_build
       - prefect.deployments.steps.run_shell_script: &shell-script-config

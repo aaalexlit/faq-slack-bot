@@ -6,7 +6,7 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 sentence-transformers
-pinecone-client[grpc]
+pinecone-client[grpc]==2.2.4
 prefect
 prefect-gcp
 GitPython
@@ -18,3 +18,4 @@ cohere
 trafilatura
 nbconvert
 prefect-docker
+langchain-openai

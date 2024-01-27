@@ -5,9 +5,9 @@ import sys
 
 import pinecone
 from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Pinecone
+from langchain_openai import ChatOpenAI
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Pinecone
 from llama_index import ServiceContext, VectorStoreIndex, get_response_synthesizer, ChatPromptTemplate
 from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
 from llama_index.indices.postprocessor import (
@@ -337,8 +337,8 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int) -> ChatPromptTempl
                                        "{context_str}\n"
                                        "---------------------\n"
                                        "Given the context information and not prior knowledge, "
-                                       "answer the query.\n"
-                                       "Query: {query_str}\n"
+                                       "answer the question.\n"
+                                       "Question: {query_str}\n"
                                        "Answer: "),
                               role=MessageRole.USER, )
     return ChatPromptTemplate(message_templates=[

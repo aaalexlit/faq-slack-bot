@@ -4,6 +4,7 @@ import re
 import sys
 
 import pinecone
+from cohere import CohereAPIError
 from langchain.chains import RetrievalQA
 from langchain_openai import ChatOpenAI
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -105,6 +106,10 @@ def handle_message_events(body):
                                 text=f"Here you go: \n{response} \n"
                                      f"References:\n{sources}"
                                 )
+    except CohereAPIError:
+        client.chat_postMessage(channel=channel_id,
+                                thread_ts=event_ts,
+                                text="There was an error, please try again later")
     except Exception as e:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
@@ -130,7 +135,7 @@ def links_to_source_nodes(response):
                 res.add(f"<{node.metadata['source']}|"
                         f" {title}-{section_title}...> ")
             else:
-                res.add(f"<{node.metadata['source']}| {title}")
+                res.add(f"<{node.metadata['source']}| {title}>")
         elif 'repo' in node.metadata:
             repo = node.metadata['repo']
             owner = node.metadata['owner']

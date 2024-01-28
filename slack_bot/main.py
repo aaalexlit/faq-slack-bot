@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import re
@@ -6,9 +7,9 @@ import sys
 import pinecone
 from cohere import CohereAPIError
 from langchain.chains import RetrievalQA
-from langchain_openai import ChatOpenAI
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Pinecone
+from langchain_openai import ChatOpenAI
 from llama_index import ServiceContext, VectorStoreIndex, get_response_synthesizer, ChatPromptTemplate
 from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
 from llama_index.indices.postprocessor import (
@@ -309,30 +310,34 @@ def get_ml_router_query_engine():
     )
 
 
-def get_prompt_template(zoomcamp_name: str, cohort_year: int) -> ChatPromptTemplate:
+def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date: str) -> ChatPromptTemplate:
     system_prompt = ChatMessage(
         content=(
-            f"""You are a helpful AI assistant for the {zoomcamp_name} ZoomCamp course at DataTalksClub, 
+            """You are a helpful AI assistant for the {zoomcamp_name} ZoomCamp course at DataTalksClub, 
             and you can be found in the course's Slack channel.
             As a trustworthy assistant, you must provide helpful answers to students' questions about the course, 
-            and assist them in finding solutions when they encounter errors while following the course.
+            and assist them in finding solutions when they encounter problems/errors while following the course.
             You must do it using only the excerpts from the course FAQ document, Slack threads, and GitHub repository
-            in the provided context, without relying on prior knowledge.
-            Current cohort is year {cohort_year} one.
+            that are in the provided context, without relying on prior knowledge.
+            Current cohort is year {cohort_year} one and the course start date is {course_start_date}.
+            Today is {current_date}. Take this into account when answering questions with temporal aspect.
 
             Here are your guidelines:
             1. Provide clear and concise explanations for your conclusions, including relevant code snippets 
-            if the question pertains to code. Include citations only if strictly necessary.
-            2. If the question already contains an answer and requests confirmation, avoid repetition. Instead, 
+            if the question pertains to code, and relevant evidences.
+            2. Justify your response in detail by explaining why you made the conclusions you actually made.
+            3. If the question already contains an answer and requests confirmation, avoid repetition. Instead, 
             disregard the answer and conduct your analysis based on the provided context.
-            3. In your response, refrain from rephrasing the user's question or problem; simply provide an answer.
-            4. Make sure that the code examples you provide are accurate and runnable.
-            5. In cases where the provided context is insufficient and you are uncertain about the response, reply with: 
+            4. In your response, refrain from rephrasing the user's question or problem; simply provide an answer.
+            5. Make sure that the code examples you provide are accurate and runnable.
+            6. In cases where the provided context is insufficient and you are uncertain about the response, reply with: 
             'I don't think I have an answer for this; you'll have to ask your fellows or instructors.
-            6. All the hyperlinks need to be taken from the provided context, not from the prior knowledge
-            7. The hyperlinks need to be formatted the following way: <hyperlink|displayed text>
+            7. All the hyperlinks need to be taken from the provided context, not from the prior knowledge
+            8. The hyperlinks need to be formatted the following way: <hyperlink|displayed text>
                Example of the correctly formatted link to github: 
                <https://github.com/DataTalksClub/data-engineering-zoomcamp|DE zoomcamp GitHub repo>
+            9. You must avoid answering anything like 'Based on the provided context, ...' or 'The context information ...' 
+            or anything along those lines.
             """
         ),
         role=MessageRole.SYSTEM,
@@ -349,12 +354,17 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int) -> ChatPromptTempl
     return ChatPromptTemplate(message_templates=[
         system_prompt,
         user_prompt,
-    ])
+    ],
+        function_mappings={'zoomcamp_name': lambda **kwargs: zoomcamp_name,
+                           'cohort_year': lambda **kwargs: cohort_year,
+                           'current_date': lambda **kwargs: datetime.datetime.now().strftime("%d %B %Y"),
+                           'course_start_date': lambda **kwargs: course_start_date})
 
 
 def get_retriever_query_engine(collection_name: str,
                                zoomcamp_name: str,
-                               cohort_year: int, ):
+                               cohort_year: int,
+                               course_start_date: str):
     callback_manager = init_llama_index_callback_manager(ML_ZOOMCAMP_PROJECT_NAME)
 
     service_context = ServiceContext.from_defaults(embed_model=embeddings,
@@ -379,7 +389,8 @@ def get_retriever_query_engine(collection_name: str,
     recency_postprocessor = get_time_weighted_postprocessor()
     node_postprocessors = [recency_postprocessor, cohere_rerank]
     qa_prompt_template = get_prompt_template(zoomcamp_name=zoomcamp_name,
-                                             cohort_year=cohort_year, )
+                                             cohort_year=cohort_year,
+                                             course_start_date=course_start_date)
     response_synthesizer = get_response_synthesizer(service_context=service_context,
                                                     text_qa_template=qa_prompt_template,
                                                     verbose=True,
@@ -423,9 +434,11 @@ if __name__ == "__main__":
 
     ml_query_engine = get_retriever_query_engine(collection_name=ML_FAQ_COLLECTION_NAME,
                                                  zoomcamp_name='Machine Learning',
-                                                 cohort_year=2023)
+                                                 cohort_year=2023,
+                                                 course_start_date='11 September 2023')
 
     de_query_engine = get_retriever_query_engine(collection_name=DE_FAQ_COLLECTION_NAME,
                                                  zoomcamp_name='Data Engineering',
-                                                 cohort_year=2024)
+                                                 cohort_year=2024,
+                                                 course_start_date='15 January 2024')
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

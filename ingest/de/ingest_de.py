@@ -23,6 +23,19 @@ def index_course_github_repo():
                       )
 
 
+@task(name="Index mage zoomcamp github repo")
+def index_mage_zoomcamp_github_repo():
+    owner = 'mage-ai'
+    repo = 'mage-zoomcamp'
+    branch = 'solutions'
+    index_github_repo(owner=owner,
+                      repo=repo,
+                      branch=branch,
+                      collection_name=FAQ_COLLECTION_NAME,
+                      ignore_directories=[],
+                      ignore_file_extensions=['.gitignore'])
+
+
 @task(name="Index FAQ Google Document")
 def index_google_doc():
     document_ids = ["19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw"]
@@ -62,6 +75,7 @@ def fill_de_index():
     index_course_schedule.submit(wait_for=[index_google_doc])
     # index_evaluation_criteria.submit(wait_for=[index_google_doc])
     index_course_github_repo.submit(wait_for=[index_google_doc])
+    index_mage_zoomcamp_github_repo.submit(wait_for=[index_google_doc])
 
 
 if __name__ == '__main__':

@@ -72,6 +72,7 @@ app = App(token=SLACK_BOT_TOKEN)
 def handle_message_events(body):
     channel_id = body["event"]["channel"]
     event_ts = body["event"]["event_ts"]
+    user = body["event"]["user"]
 
     if channel_id not in ALLOWED_CHANNELS:
         client.chat_postMessage(channel=channel_id,
@@ -88,7 +89,8 @@ def handle_message_events(body):
 
     client.chat_postMessage(channel=channel_id,
                             thread_ts=event_ts,
-                            text=greeting_message)
+                            text=greeting_message,
+                            unfurl_links=False)
     try:
         if channel_id in MLOPS_CHANNELS:
             response = mlops_qa.run(question)
@@ -97,15 +99,15 @@ def handle_message_events(body):
         else:
             response = de_query_engine.query(question)
 
+        response_text = f"Hey, <@{user}>! Here you go: \n{response}"
+
         if hasattr(response, "source_nodes"):
             sources = links_to_source_nodes(response)
-        else:
-            sources = ''
+            response_text += f"\nReferences:\n{sources}"
 
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
-                                text=f"Here you go: \n{response} \n"
-                                     f"References:\n{sources}"
+                                text=response_text
                                 )
     except CohereAPIError:
         client.chat_postMessage(channel=channel_id,
@@ -122,13 +124,14 @@ def links_to_source_nodes(response):
     source_nodes = response.source_nodes
     link_template = 'https://datatalks-club.slack.com/archives/{}/p{}'
     for node in source_nodes:
-        # For the time being only slack channel messages source can be provided
+        # Slack
         if 'channel' in node.metadata:
             channel_id = node.metadata['channel']
             thread_ts = node.metadata['thread_ts']
             thread_ts_str = str(thread_ts).replace('.', '')
             link_template.format(channel_id, thread_ts_str)
             res.add(link_template.format(channel_id, thread_ts_str))
+        # Google doc
         elif 'source' in node.metadata:
             title = node.metadata['title']
             if title == 'FAQ':
@@ -137,6 +140,7 @@ def links_to_source_nodes(response):
                         f" {title}-{section_title}...> ")
             else:
                 res.add(f"<{node.metadata['source']}| {title}>")
+        # GitHub
         elif 'repo' in node.metadata:
             repo = node.metadata['repo']
             owner = node.metadata['owner']
@@ -164,20 +168,23 @@ def get_greeting_message(channel_id):
                        "The answers might not be accurate since I'm " \
                        "just a human-friendly interface to the " \
                        "<https://docs.google.com/document/d/{link}| {name} Zoomcamp FAQ>" \
-                       "{additional_message}." \
+                       "{additional_message} and this course's <https://github.com/DataTalksClub/{repo}|GitHub repo>." \
                        "\nThanks for your request, I'm on it!"
-    additional_message = ", this Slack channel, and this course's GitHub repo"
+    additional_message = ", this Slack channel,"
     if channel_id in MLOPS_CHANNELS:
         name = 'MLOps'
         link = '12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d'
-        additional_message = " and also this course's github repository"
+        repo = 'mlops-zoomcamp'
+        additional_message = ""
     elif channel_id in ML_CHANNELS:
         name = 'ML'
         link = '1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8/edit#heading=h.98qq6wfuzeck'
+        repo = 'machine-learning-zoomcamp'
     else:
         name = 'DE'
         link = '19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw/edit#heading=h.o29af0z8xx88'
-    return message_template.format(name=name, link=link, additional_message=additional_message)
+        repo = 'data-engineering-zoomcamp'
+    return message_template.format(name=name, link=link, repo=repo, additional_message=additional_message)
 
 
 def log_langchain_to_wandb():
@@ -342,12 +349,12 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date:
         role=MessageRole.SYSTEM,
     )
     user_prompt = ChatMessage(content=("Excerpts from the course FAQ document, Slack threads, and "
-                                       "GitHub repository are below delimited by the dashed lines.\n"
+                                       "GitHub repository are below delimited by the dashed lines:\n"
                                        "---------------------\n"
                                        "{context_str}\n"
                                        "---------------------\n"
-                                       "Given the excerpts and not prior knowledge, "
-                                       "answer the question.\n"
+                                       # "Given the information above and not prior knowledge, "
+                                       # "answer the question.\n"
                                        "Question: {query_str}\n"
                                        "Answer: "),
                               role=MessageRole.USER, )

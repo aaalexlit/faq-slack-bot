@@ -46,7 +46,6 @@ class SlackReader(BasePydanticReader):
 
     _client: Any = PrivateAttr()
 
-
     def __init__(
             self,
             slack_token: Optional[str] = None,
@@ -198,7 +197,7 @@ class SlackReader(BasePydanticReader):
             logger.error(
                 f'Rate limit error reached, sleeping for: {retry_after} seconds'
             )
-            time.sleep(int(retry_after))
+            time.sleep(int(retry_after) + 1)
         else:
             logger.error(f"Error parsing conversation replies: {e}")
 

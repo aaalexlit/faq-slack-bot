@@ -62,7 +62,7 @@ def index_evaluation_criteria():
 
 @task(name="Index slack messages")
 def index_slack_messages():
-    earliest_date = datetime(2023, 11, 1)
+    earliest_date = datetime(2024, 1, 1)
     channel_ids = [DE_CHANNEL_ID]
     index_slack_history(channel_ids, earliest_date, FAQ_COLLECTION_NAME)
 

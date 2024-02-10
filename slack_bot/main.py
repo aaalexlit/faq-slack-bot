@@ -82,6 +82,13 @@ def handle_message_events(body):
 
     # Extract question from the message text
     question = remove_mentions(str(body["event"]["text"]))
+    if question.strip() == '':
+        client.chat_postMessage(channel=channel_id,
+                                thread_ts=event_ts,
+                                text=('Ooops! It seems like your question is empty. '
+                                      'Please make sure to tag me in your message along with your question.')
+                                )
+        return
     logger.info(question)
 
     # Let the user know that we are busy with the request

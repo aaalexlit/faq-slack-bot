@@ -48,6 +48,12 @@ def create_github_secrets():
     create_secret_block('github-token', 'GITHUB_TOKEN')
 
 
+def create_upstash_redis_secrets():
+    create_secret_block('upstash-redis-rest-url', 'UPSTASH_REDIS_REST_URL')
+    time.sleep(10)
+    create_secret_block('upstash-redis-rest-token', 'UPSTASH_REDIS_REST_TOKEN')
+
+
 if __name__ == '__main__':
     create_gcp_creds_block()
     time.sleep(10)
@@ -58,3 +64,5 @@ if __name__ == '__main__':
     create_slack_secrets()
     time.sleep(10)
     create_github_secrets()
+    time.sleep(10)
+    create_upstash_redis_secrets()

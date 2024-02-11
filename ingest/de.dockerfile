@@ -1,5 +1,7 @@
 FROM prefecthq/prefect:2-python3.10
 
+ENV EMBEDDING_CACHE_NAMESPACE=de_zoomcamp
+
 RUN apt-get update && \
     apt-get install -y gcc python3-dev
 

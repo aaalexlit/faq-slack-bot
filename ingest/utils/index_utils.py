@@ -3,13 +3,16 @@ import os
 import tempfile
 from datetime import datetime
 
+from langchain.embeddings import CacheBackedEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.storage import UpstashRedisByteStore
 from llama_index import Document, StorageContext, ServiceContext, VectorStoreIndex
 from llama_index.node_parser import NodeParser, SentenceSplitter
 from llama_index.readers import TrafilaturaWebReader, GithubRepositoryReader
 from llama_index.vector_stores import MilvusVectorStore
 from prefect.blocks.system import Secret
 from prefect_gcp import GcpCredentials
+from upstash_redis import Redis
 
 from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
 from ingest.readers.slack_reader import SlackReader
@@ -60,7 +63,7 @@ def add_to_index(documents: [Document],
                                                 dim=embedding_dimension,
                                                 overwrite=overwrite)
     storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
-    service_context = ServiceContext.from_defaults(embed_model=embeddings,
+    service_context = ServiceContext.from_defaults(embed_model=load_embeddings(),
                                                    node_parser=node_parser,
                                                    llm=None)
     VectorStoreIndex.from_documents(documents,
@@ -122,3 +125,18 @@ def index_faq(document_ids: [str], collection_name: str, question_heading_style_
                  collection_name=collection_name,
                  overwrite=True,
                  )
+
+
+def load_embeddings() -> CacheBackedEmbeddings:
+    redis_client = Redis(url=Secret.load('upstash-redis-rest-url').get(),
+                         token=Secret.load('upstash-redis-rest-token').get())
+    embeddings_cache = UpstashRedisByteStore(client=redis_client,
+                                             ttl=None,
+                                             namespace=os.getenv('EMBEDDING_CACHE_NAMESPACE'))
+
+    cached_embedder = CacheBackedEmbeddings.from_bytes_store(
+        embeddings,
+        embeddings_cache,
+        namespace=embeddings.model_name + "/",
+    )
+    return cached_embedder

@@ -19,3 +19,4 @@ trafilatura
 nbconvert
 prefect-docker
 langchain-openai
+upstash-redis

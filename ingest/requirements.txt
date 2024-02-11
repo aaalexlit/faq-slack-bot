@@ -11,3 +11,4 @@ llama-index
 trafilatura
 nbconvert
 ipython
+upstash-redis

@@ -1,9 +1,8 @@
 import os
 from typing import Any, Optional
 
-from llama_index import Document
-from llama_index.readers.base import BasePydanticReader
-from llama_index.readers.google_readers.gdocs import SCOPES
+from llama_index.core.readers.base import BasePydanticReader
+from llama_index.core.schema import Document
 
 DEFAULT_TOKEN_JSON_PATH = 'token.json'
 DEFAULT_SERVICE_ACCOUNT_JSON_PATH = 'service_account.json'
@@ -14,6 +13,8 @@ DEFAULT_QUESTION_HEADING_STYLE_NUM = 3
 
 EXCLUDED_LLM_METADATA_KEYS = ['source', 'title', 'section_name']
 EXCLUDED_EMBED_METADATA_KEYS = ['source', 'title']
+
+SCOPES = ["https://www.googleapis.com/auth/documents.readonly"]
 
 
 class FAQGoogleDocsReader(BasePydanticReader):

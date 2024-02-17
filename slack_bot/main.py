@@ -10,18 +10,21 @@ from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Pinecone
 from langchain_openai import ChatOpenAI
-from llama_index import ServiceContext, VectorStoreIndex, get_response_synthesizer, ChatPromptTemplate
-from llama_index.callbacks import WandbCallbackHandler, CallbackManager, LlamaDebugHandler
-from llama_index.indices.postprocessor import (
-    TimeWeightedPostprocessor
-)
-from llama_index.llms import ChatMessage, MessageRole
-from llama_index.postprocessor import CohereRerank
-from llama_index.query_engine import RouterQueryEngine, RetrieverQueryEngine
-from llama_index.selectors.pydantic_selectors import PydanticMultiSelector
-from llama_index.tools import QueryEngineTool
-from llama_index.vector_stores import MilvusVectorStore, MetadataFilters
-from llama_index.vector_stores.types import ExactMatchFilter
+from llama_index.core import ServiceContext
+from llama_index.core import VectorStoreIndex
+from llama_index.core import get_response_synthesizer
+from llama_index.core import ChatPromptTemplate
+from llama_index.callbacks.wandb import WandbCallbackHandler
+from llama_index.core.callbacks import CallbackManager, LlamaDebugHandler
+from llama_index.core.postprocessor import TimeWeightedPostprocessor
+from llama_index.core.llms import ChatMessage, MessageRole
+from llama_index.postprocessor.cohere_rerank import CohereRerank
+from llama_index.core.query_engine import RouterQueryEngine, RetrieverQueryEngine
+from llama_index.core.selectors import PydanticMultiSelector
+from llama_index.core.tools import QueryEngineTool
+from llama_index.vector_stores.milvus import MilvusVectorStore
+from llama_index.core.vector_stores import MetadataFilters
+from llama_index.core.vector_stores import ExactMatchFilter
 from requests.exceptions import ChunkedEncodingError
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -337,7 +340,7 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date:
             "Today is {current_date}. Take this into account when answering questions with temporal aspect. \n"
             "Here are your guidelines:\n"
             "- Provide clear and concise explanations for your conclusions, including relevant evidences, and "
-            "relevant code snippets if the question pertains to code. "
+            "relevant code snippets if the question pertains to code. \n"
             "- Avoid starting your answer with 'Based on the provided ...' or 'The context information ...' "
             "or anything like this.\n"
             "- Justify your response in detail by explaining why you made the conclusions you actually made.\n"
@@ -347,7 +350,7 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date:
             "analysis based on the provided sources.\n"
             "- In cases where the provided information is insufficient and you are uncertain about the response, "
             "reply with: 'I don't think I have an answer for this; you'll have to ask your fellows or instructors.\n"
-            "- All the hyperlinks need to be taken from the provided excerpts, not from the prior knowledge. "
+            "- All the hyperlinks need to be taken from the provided excerpts, not from prior knowledge. "
             "If there are no hyperlinks provided, abstain from adding hyperlinks to the answer.\n"
             "- The hyperlinks need to be formatted the following way: <hyperlink|displayed text> \n"
             "Example of the correctly formatted link to github: \n"

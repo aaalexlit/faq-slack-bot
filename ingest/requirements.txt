@@ -7,7 +7,14 @@ sentence-transformers
 prefect-gcp
 GitPython
 pymilvus
-llama-index
+llama-index-core
+llama-index-readers-web
+llama-index-callbacks-wandb
+llama-index-readers-github
+llama-index-vector-stores-milvus
+llama-index-embeddings-langchain
+llama-index-postprocessor-cohere-rerank
+llama-index-llms-langchain
 trafilatura
 nbconvert
 ipython

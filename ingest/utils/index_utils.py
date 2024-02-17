@@ -6,10 +6,14 @@ from datetime import datetime, timedelta
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.storage import UpstashRedisByteStore
-from llama_index import Document, StorageContext, ServiceContext, VectorStoreIndex
-from llama_index.node_parser import NodeParser, SentenceSplitter
-from llama_index.readers import TrafilaturaWebReader, GithubRepositoryReader
-from llama_index.vector_stores import MilvusVectorStore
+from llama_index.core.indices import VectorStoreIndex
+from llama_index.core.node_parser import NodeParser, SentenceSplitter
+from llama_index.core.schema import Document
+from llama_index.core.service_context import ServiceContext
+from llama_index.core.storage import StorageContext
+from llama_index.readers.github import GithubRepositoryReader
+from llama_index.readers.web import TrafilaturaWebReader
+from llama_index.vector_stores.milvus import MilvusVectorStore
 from prefect.blocks.system import Secret
 from prefect_gcp import GcpCredentials
 from upstash_redis import Redis

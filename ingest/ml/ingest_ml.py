@@ -59,9 +59,8 @@ def index_evaluation_criteria():
 
 @task(name="Index slack messages")
 def index_slack_messages():
-    earliest_date = datetime(2023, 8, 1)
     channel_ids = [ML_CHANNEL_ID]
-    index_slack_history(channel_ids, earliest_date, FAQ_COLLECTION_NAME)
+    index_slack_history(channel_ids, FAQ_COLLECTION_NAME)
 
 
 @flow(name="Update ML info Milvus index", log_prints=True)

@@ -1,7 +1,7 @@
 import json
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -98,7 +98,8 @@ def index_github_repo(owner: str,
     add_to_index(documents, collection_name=collection_name)
 
 
-def index_slack_history(channel_ids: [str], earliest_date: datetime, collection_name: str):
+def index_slack_history(channel_ids: [str], collection_name: str):
+    earliest_date = datetime.now() - timedelta(days=90)
     slack_reader = SlackReader(earliest_date=earliest_date,
                                bot_user_id=BOT_USER_ID,
                                not_ignore_users=[AU_TOMATOR_USER_ID],

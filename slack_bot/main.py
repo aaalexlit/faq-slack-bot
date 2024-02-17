@@ -338,7 +338,7 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date:
             "Here are your guidelines:\n"
             "- Provide clear and concise explanations for your conclusions, including relevant evidences, and "
             "relevant code snippets if the question pertains to code. "
-            "- Don't start your answer with 'Based on the provided ...' or 'The context information ...' "
+            "- Avoid starting your answer with 'Based on the provided ...' or 'The context information ...' "
             "or anything like this.\n"
             "- Justify your response in detail by explaining why you made the conclusions you actually made.\n"
             "- In your response, refrain from rephrasing the user's question or problem; simply provide an answer.\n"
@@ -348,7 +348,7 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date:
             "- In cases where the provided information is insufficient and you are uncertain about the response, "
             "reply with: 'I don't think I have an answer for this; you'll have to ask your fellows or instructors.\n"
             "- All the hyperlinks need to be taken from the provided excerpts, not from the prior knowledge. "
-            "If there are no hyperlinks provided, don't add hyperlinks to the answer.\n"
+            "If there are no hyperlinks provided, abstain from adding hyperlinks to the answer.\n"
             "- The hyperlinks need to be formatted the following way: <hyperlink|displayed text> \n"
             "Example of the correctly formatted link to github: \n"
             "<https://github.com/DataTalksClub/data-engineering-zoomcamp|DE zoomcamp GitHub repo>"
@@ -409,7 +409,7 @@ def get_retriever_query_engine(collection_name: str,
                                                     text_qa_template=qa_prompt_template,
                                                     verbose=True,
                                                     )
-    return RetrieverQueryEngine(vector_store_index.as_retriever(similarity_top_k=10),
+    return RetrieverQueryEngine(vector_store_index.as_retriever(similarity_top_k=15),
                                 node_postprocessors=node_postprocessors,
                                 response_synthesizer=response_synthesizer,
                                 callback_manager=callback_manager)

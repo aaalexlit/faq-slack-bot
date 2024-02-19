@@ -1,6 +1,12 @@
-This is a repo for a human-interface Slack chatbot for answering questions
-related to MLOps Zoomcamp by DataTalks.Club
+This is a repo for a human-interface LLM-powered QA Slack chatbot for answering questions
+related to DataTalks.Club Zoomcamps
 
+# Current version
+
+Please follow [this report](https://api.wandb.ai/links/aaalex-lit/ii6tpid4) that
+explains in detail how the bot works
+
+# First version
 ## Behind the scenes
 Course FAQ Google Document and the Course repo get indexed to the Pinecone vector store.
 Then semantic search retrieves the most similar (and hopefully most relevant) pieces to the question asked.

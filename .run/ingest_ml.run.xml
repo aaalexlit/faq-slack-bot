@@ -9,9 +9,8 @@
       <env name="EMBEDDING_CACHE_NAMESPACE" value="ml_zoomcamp" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/mlops-faq/bin/python" />
-    <option name="SDK_NAME" value="Python 3.10 (mlops-faq)" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ingest" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="net.ashald.envfile">

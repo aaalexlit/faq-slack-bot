@@ -5,8 +5,8 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="EMBEDDING_CACHE_NAMESPACE" value="de_zoomcamp" />
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="EMBEDDING_CACHE_NAMESPACE" value="de_zoomcamp" />
     </envs>
     <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ingest/de" />

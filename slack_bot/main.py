@@ -1,33 +1,38 @@
 import datetime
+import hashlib
 import logging
 import os
 import re
 import sys
+import uuid
 
 import pinecone
 from cohere import CohereAPIError
+from langchain import callbacks
 from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Pinecone
 from langchain_openai import ChatOpenAI
+from langsmith import Client
+from llama_index.callbacks.wandb import WandbCallbackHandler
+from llama_index.core import ChatPromptTemplate
 from llama_index.core import ServiceContext
 from llama_index.core import VectorStoreIndex
 from llama_index.core import get_response_synthesizer
-from llama_index.core import ChatPromptTemplate
-from llama_index.callbacks.wandb import WandbCallbackHandler
 from llama_index.core.callbacks import CallbackManager, LlamaDebugHandler
-from llama_index.core.postprocessor import TimeWeightedPostprocessor
 from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.postprocessor.cohere_rerank import CohereRerank
+from llama_index.core.postprocessor import TimeWeightedPostprocessor
 from llama_index.core.query_engine import RouterQueryEngine, RetrieverQueryEngine
 from llama_index.core.selectors import PydanticMultiSelector
 from llama_index.core.tools import QueryEngineTool
-from llama_index.vector_stores.milvus import MilvusVectorStore
-from llama_index.core.vector_stores import MetadataFilters
 from llama_index.core.vector_stores import ExactMatchFilter
+from llama_index.core.vector_stores import MetadataFilters
+from llama_index.postprocessor.cohere_rerank import CohereRerank
+from llama_index.vector_stores.milvus import MilvusVectorStore
 from requests.exceptions import ChunkedEncodingError
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+from slack_sdk.models.views import View
 from slack_sdk.web import WebClient
 
 logging.basicConfig(stream=sys.stdout,
@@ -68,6 +73,84 @@ ML_SLACK_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the co
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
 SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN')
 app = App(token=SLACK_BOT_TOKEN)
+langsmith_client = Client()
+
+
+@app.action('upvote')
+def add_positive_feedback(ack, body):
+    ack()
+    add_feedback(body, 'upvote')
+
+
+@app.action('downvote')
+def add_negative_feedback(ack, body):
+    ack()
+    add_feedback(body, 'downvote')
+
+
+def add_feedback(body, feedback_type: str):
+    logger.info(f'action body = {body}')
+    try:
+        original_blocks = body['message']['blocks']
+        actions_block_elements = [block for block in original_blocks if block.get('type') == 'actions'][0]['elements']
+        element_to_update = [element for element in actions_block_elements if element.get('action_id') == feedback_type][0]
+        element_text_to_update = element_to_update['text']['text']
+        updated_text, updated_number = increment_number_in_string(element_text_to_update)
+        element_to_update['text']['text'] = updated_text
+
+        run_id = body['actions'][0]['value']
+        feedback_id = get_feedback_id_from_run_id_and_feedback_type(run_id, feedback_type)
+
+        user_id = body['user']['id']
+        user_name = body['user']['username']
+
+        logger.info(f'run_id {run_id} {feedback_type}ed by {user_name}({user_id})')
+
+        if updated_number > 1:
+            langsmith_client.update_feedback(
+                feedback_id=feedback_id,
+                score=updated_number
+            )
+        else:
+            langsmith_client.create_feedback(
+                run_id=run_id,
+                key=feedback_type,
+                score=updated_number,
+                feedback_id=feedback_id
+            )
+
+        client.chat_update(
+            channel=body['channel']['id'],
+            ts=body['message']['ts'],
+            blocks=original_blocks,
+            text=body['message']['text']
+        )
+    except Exception as ex:
+        logger.error(f"Error occured for run_id = {run_id} and feedback_id = {feedback_id}\n"
+                     f"Error: {ex}")
+        client.views_open(trigger_id=body['trigger_id'],
+                          view=View(type='modal',
+                                    title='Error recording feedback',
+                                    blocks=[
+                                        {
+                                            "type": "section",
+                                            "text": {
+                                                "type": "mrkdwn",
+                                                "text": (
+                                                    "An error occurred while attempting to capture your feedback.\n"
+                                                    "Please try again later. Apologies for the inconvenience.")
+                                            }
+                                        }
+                                    ]))
+
+
+def get_feedback_id_from_run_id_and_feedback_type(run_id, feedback_type):
+    # Combine run_id UUID bytes and action bytes
+    combined_bytes = uuid.UUID(run_id).bytes + feedback_type.encode('utf-8')
+    # Hash the combined bytes
+    hashed_bytes = hashlib.sha1(combined_bytes).digest()
+    # Convert hashed bytes to UUID
+    return uuid.UUID(bytes=hashed_bytes[:16])
 
 
 # This gets activated when the bot is tagged in a channel
@@ -97,17 +180,21 @@ def handle_message_events(body):
     # Let the user know that we are busy with the request
     greeting_message = get_greeting_message(channel_id)
 
-    client.chat_postMessage(channel=channel_id,
-                            thread_ts=event_ts,
-                            text=greeting_message,
-                            unfurl_links=False)
+    client.chat_postEphemeral(channel=channel_id,
+                              thread_ts=event_ts,
+                              text=greeting_message,
+                              unfurl_links=False,
+                              user=user)
     try:
-        if channel_id in MLOPS_CHANNELS:
-            response = mlops_qa.run(question)
-        elif channel_id in ML_CHANNELS:
-            response = ml_query_engine.query(question)
-        else:
-            response = de_query_engine.query(question)
+        with callbacks.collect_runs() as cb:
+            if channel_id in MLOPS_CHANNELS:
+                response = mlops_qa.run(question)
+            elif channel_id in ML_CHANNELS:
+                response = ml_query_engine.query(question)
+            else:
+                response = de_query_engine.query(question)
+            # get the id of the last run that's supposedly a run that delivers the final answer
+            run_id = cb.traced_runs[-1].id
 
         response_text = f"Hey, <@{user}>! Here you go: \n{response}"
 
@@ -115,8 +202,56 @@ def handle_message_events(body):
             sources = links_to_source_nodes(response)
             response_text += f"\nReferences:\n{sources}"
 
+        response_blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": response_text
+                }
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": ":pray: Please leave your feedback to help me improve "
+                    }
+                ]
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": ":thumbsup: 0"
+                        },
+                        "style": "primary",
+                        "value": f"{run_id}",
+                        "action_id": "upvote"
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": ":thumbsdown: 0"
+                        },
+                        "style": "danger",
+                        "value": f"{run_id}",
+                        "action_id": "downvote"
+                    }
+                ]
+            }
+        ]
+
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
+                                blocks=response_blocks,
                                 text=response_text
                                 )
     except CohereAPIError:
@@ -159,6 +294,20 @@ def links_to_source_nodes(response):
             link_to_file = build_repo_path(owner=owner, repo=repo, branch=branch, file_path=file_path)
             res.add(f'<{link_to_file}| GitHub-{repo}-{file_path.split("/")[-1]}>')
     return '\n'.join(res)
+
+
+def increment_number_in_string(source_string):
+    # Regular expression to find any sequence of digits (\d+)
+    pattern = r'(\d+)'
+
+    # Define a lambda function to replace matched digits with the incremented value
+    replacer = lambda match: str(int(match.group(0)) + 1)
+
+    # Use re.sub() to replace matched digits with the incremented value
+    result_string = re.sub(pattern, replacer, source_string)
+    result_number = int(re.search(pattern, result_string).group(0))
+
+    return result_string, result_number
 
 
 def build_repo_path(owner: str, repo: str, branch: str, file_path: str):
@@ -342,7 +491,7 @@ def get_prompt_template(zoomcamp_name: str, cohort_year: int, course_start_date:
             "- Provide clear and concise explanations for your conclusions, including relevant evidences, and "
             "relevant code snippets if the question pertains to code. \n"
             "- Avoid starting your answer with 'Based on the provided ...' or 'The context information ...' "
-            "or anything like this.\n"
+            "or anything like this, instead, provide the information directly in the response.\n"
             "- Justify your response in detail by explaining why you made the conclusions you actually made.\n"
             "- In your response, refrain from rephrasing the user's question or problem; simply provide an answer.\n"
             "- Make sure that the code examples you provide are accurate and runnable.\n"

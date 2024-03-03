@@ -1,18 +1,31 @@
 name: Fly Deploy
+
 on:
+  workflow_run:
+    workflows: ["Docker Image CI"]
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       docker_tag:
-        description: 'Docker image tag to be deployed. by default `aaalexlit/faq-slack-bot:main`'
+        description: 'Docker image tag to be deployed. by default `main`'
         required: false
         default: 'main'
+
 jobs:
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only --image aaalexlit/faq-slack-bot:${{ github.event.inputs.docker_tag }}
+      - run: |
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            DOCKER_TAG="main"
+          else
+            DOCKER_TAG="${{ github.event.workflow_run.event.inputs.docker_tag || github.event.inputs.docker_tag }}"
+          fi
+          flyctl deploy --remote-only --image aaalexlit/faq-slack-bot:${DOCKER_TAG}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

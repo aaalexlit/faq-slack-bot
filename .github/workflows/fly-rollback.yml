@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 jobs:
   rollback:
-    name: Deploy app
+    name: Rollback to the previously deployed image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

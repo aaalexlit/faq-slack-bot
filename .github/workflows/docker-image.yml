@@ -21,6 +21,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
+      - name: Pull currently used Docker image
+        run: docker pull aaalexlit/faq-slack-bot:main
+
+      - name: Tag currently used Docker image as "previous" to enable easy rollback
+        run: docker tag aaalexlit/faq-slack-bot:main aaalexlit/faq-slack-bot:previous
+
+      - name: Push tagged image to Docker Hub
+        run: docker push aaalexlit/faq-slack-bot:previous
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5

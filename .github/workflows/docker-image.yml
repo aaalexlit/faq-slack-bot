@@ -28,7 +28,7 @@ jobs:
           images: aaalexlit/faq-slack-bot
           tags: |
             type=sha
-            type=ref,event=workflow_dispatch
+            type=ref,event=branch
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

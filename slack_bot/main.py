@@ -89,11 +89,13 @@ def add_negative_feedback(ack, body):
 
 
 def add_feedback(body, feedback_type: str):
-    logger.info(f'action body = {body}')
+    run_id = None
+    feedback_id = None
     try:
         original_blocks = body['message']['blocks']
         actions_block_elements = [block for block in original_blocks if block.get('type') == 'actions'][0]['elements']
-        element_to_update = [element for element in actions_block_elements if element.get('action_id') == feedback_type][0]
+        element_to_update = \
+            [element for element in actions_block_elements if element.get('action_id') == feedback_type][0]
         element_text_to_update = element_to_update['text']['text']
         updated_text, updated_number = increment_number_in_string(element_text_to_update)
         element_to_update['text']['text'] = updated_text
@@ -126,22 +128,32 @@ def add_feedback(body, feedback_type: str):
             text=body['message']['text']
         )
     except Exception as ex:
-        logger.error(f"Error occured for run_id = {run_id} and feedback_id = {feedback_id}\n"
-                     f"Error: {ex}")
-        client.views_open(trigger_id=body['trigger_id'],
-                          view=View(type='modal',
-                                    title='Error recording feedback',
-                                    blocks=[
-                                        {
-                                            "type": "section",
-                                            "text": {
-                                                "type": "mrkdwn",
-                                                "text": (
-                                                    "An error occurred while attempting to capture your feedback.\n"
-                                                    "Please try again later. Apologies for the inconvenience.")
-                                            }
+        error_message = f'An error occurred when trying to record user feedback with action body =\n{body}\n'
+        if run_id:
+            error_message += f'for run_id = {run_id}\n'
+        if feedback_id:
+            error_message += f'and feedback_id = {feedback_id}\n'
+
+        logger.error(f'{error_message}'
+                     f'Error: {ex}')
+        show_feedback_logging_error_modal(body['trigger_id'])
+
+
+def show_feedback_logging_error_modal(trigger_id):
+    client.views_open(trigger_id=trigger_id,
+                      view=View(type='modal',
+                                title='Error recording feedback',
+                                blocks=[
+                                    {
+                                        "type": "section",
+                                        "text": {
+                                            "type": "mrkdwn",
+                                            "text": (
+                                                "An error occurred while attempting to capture your feedback.\n"
+                                                "Please try again later. Apologies for the inconvenience.")
                                         }
-                                    ]))
+                                    }
+                                ]))
 
 
 def get_feedback_id_from_run_id_and_feedback_type(run_id, feedback_type):

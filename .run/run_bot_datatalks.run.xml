@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="run_bot_local_ws" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="run_bot_datatalks" type="PythonConfigurationType" factoryName="Python">
     <module name="mlops-faq" />
-    <option name="ENV_FILES" value="$PROJECT_DIR$/.env" />
+    <option name="ENV_FILES" value="$PROJECT_DIR$/slack_bot/.env" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -20,7 +20,7 @@
       <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
       <ENTRIES>
         <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-        <ENTRY IS_ENABLED="true" PARSER="env" IS_EXECUTABLE="true" PATH=".env" />
+        <ENTRY IS_ENABLED="false" PARSER="env" IS_EXECUTABLE="false" PATH="slack_bot/.env" />
       </ENTRIES>
     </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/slack_bot/main.py" />

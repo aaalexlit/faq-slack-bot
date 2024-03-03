@@ -192,11 +192,10 @@ def handle_message_events(body):
     # Let the user know that we are busy with the request
     greeting_message = get_greeting_message(channel_id)
 
-    client.chat_postEphemeral(channel=channel_id,
-                              thread_ts=event_ts,
-                              text=greeting_message,
-                              unfurl_links=False,
-                              user=user)
+    posted_greeting_message = client.chat_postMessage(channel=channel_id,
+                                                      thread_ts=event_ts,
+                                                      text=greeting_message,
+                                                      unfurl_links=False)
     try:
         with callbacks.collect_runs() as cb:
             if channel_id in MLOPS_CHANNELS:
@@ -277,11 +276,14 @@ def handle_message_events(body):
                                 blocks=response_blocks,
                                 text=response_text
                                 )
+        client.chat_delete(channel=channel_id,
+                           ts=posted_greeting_message.data['ts'])
     except CohereAPIError:
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text="There was an error, please try again later")
     except Exception as e:
+        logger.error(f'Error responding to a query\n{e}')
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 text=f"There was an error: {e}")

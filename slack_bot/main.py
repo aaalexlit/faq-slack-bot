@@ -106,7 +106,7 @@ def add_feedback(body, feedback_type: str):
         user_id = body['user']['id']
         user_name = body['user']['username']
 
-        logger.info(f'run_id {run_id} {feedback_type}ed by {user_name}({user_id})')
+        logger.info(f'run_id {run_id} {feedback_type}d by {user_name}({user_id})')
 
         if updated_number > 1:
             langsmith_client.update_feedback(

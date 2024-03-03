@@ -6,7 +6,6 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 sentence-transformers
-pinecone-client[grpc]==2.2.4
 prefect
 prefect-gcp
 GitPython
@@ -28,3 +27,4 @@ nbconvert
 prefect-docker
 langchain-openai
 upstash-redis
+pinecone-client[grpc]==2.2.4

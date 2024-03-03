@@ -210,10 +210,6 @@ def handle_message_events(body):
 
         response_text = f"Hey, <@{user}>! Here you go: \n{response}"
 
-        if hasattr(response, "source_nodes"):
-            sources = links_to_source_nodes(response)
-            response_text += f"\nReferences:\n{sources}"
-
         response_blocks = [
             {
                 "type": "section",
@@ -224,16 +220,31 @@ def handle_message_events(body):
             },
             {
                 "type": "divider"
+            }]
+        if hasattr(response, "source_nodes"):
+            sources = links_to_source_nodes(response)
+            references = f"References:\n{sources}"
+            references_blocks = [{
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": references
+                }
             },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": ":pray: Please leave your feedback to help me improve "
-                    }
-                ]
-            },
+                {
+                    "type": "divider"
+                }]
+            response_blocks.extend(references_blocks)
+
+        response_blocks.extend([{
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": ":pray: Please leave your feedback to help me improve "
+                }
+            ]
+        },
             {
                 "type": "actions",
                 "elements": [
@@ -259,7 +270,7 @@ def handle_message_events(body):
                     }
                 ]
             }
-        ]
+        ])
 
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,

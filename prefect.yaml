@@ -3,8 +3,8 @@
 # control along with your flow code.
 
 # Generic metadata about this project
-name: ml
-prefect-version: 2.14.12
+name: zoomcamp-bot-index
+prefect-version: 2.16.3
 
 # build section allows you to manage and build docker images
 build:
@@ -29,8 +29,7 @@ definitions:
         image: '{{ build_image.image }}'
         env:
           EXECUTION_ENV: zilliz
-        auto_remove:
-          true
+        auto_remove: true
   schedules:
     at_23_daily: &at_23_daily
       cron: 0 23 * * *
@@ -45,7 +44,7 @@ definitions:
       timezone: Europe/Madrid
       day_or: true
   actions:
-    docker_build: &docker_build
+    docker_build:
       - prefect.deployments.steps.run_shell_script: &shell-script-config
           id: get-commit-hash
           script: git rev-parse --short HEAD
@@ -64,7 +63,8 @@ deployments:
       - ml-ingest
       - zoomcamp-faq-bot
     description: Fill Zilliz index for ML Zoomcamp
-    schedule: *at_23_monday
+    schedules:
+      - *at_23_monday
     entrypoint: ingest/ml/ingest_ml.py:fill_ml_index
     work_pool: *zoomcamp-faq-bot-pool
     build:
@@ -81,13 +81,15 @@ deployments:
       - de-ingest
       - zoomcamp-faq-bot
     description: Fill Zilliz index for DE Zoomcamp
-    schedule: *at_1_daily
+    schedules:
+      - *at_1_daily
     entrypoint: ingest/de/ingest_de.py:fill_de_index
     work_pool: *zoomcamp-faq-bot-pool
     build:
       - prefect.deployments.steps.run_shell_script: *shell-script-config
       - prefect_docker.deployments.steps.build_docker_image:
-          <<: *docker-build-config # Uses the docker_build_config and overrides the dockerfile and image_name fields
+          <<: *docker-build-config
+          # Uses the docker_build_config and overrides the dockerfile and image_name fields
           dockerfile: ingest/de.dockerfile
           image_name: aaalexlit/zoomcamp-faq-ingest-de
     pull:

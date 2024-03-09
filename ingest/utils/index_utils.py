@@ -3,15 +3,16 @@ import os
 import tempfile
 from datetime import datetime, timedelta
 
+from jupyter_notebook_parser import JupyterNotebookParser
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.storage import UpstashRedisByteStore
+from llama_index.core import Settings
 from llama_index.core.indices import VectorStoreIndex
-from llama_index.core.node_parser import NodeParser, SentenceSplitter
+from llama_index.core.node_parser import NodeParser, SentenceSplitter, MarkdownNodeParser
 from llama_index.core.schema import Document
-from llama_index.core.service_context import ServiceContext
 from llama_index.core.storage import StorageContext
-from llama_index.readers.github import GithubRepositoryReader
+from llama_index.readers.github import GithubRepositoryReader, GithubClient
 from llama_index.readers.web import TrafilaturaWebReader
 from llama_index.vector_stores.milvus import MilvusVectorStore
 from prefect.blocks.system import Secret
@@ -24,12 +25,33 @@ from ingest.readers.slack_reader import SlackReader
 BOT_USER_ID = 'U05DM3PEJA2'
 AU_TOMATOR_USER_ID = 'U01S08W6Z9T'
 
+EXCLUDE_FILTER_TYPE = GithubRepositoryReader.FilterType.EXCLUDE
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
 
 embedding_dimension = len(embeddings.embed_query("test"))
 print(f'embedding dimension = {embedding_dimension}')
+
+
+def load_embeddings() -> CacheBackedEmbeddings:
+    redis_client = Redis(url=Secret.load('upstash-redis-rest-url').get(),
+                         token=Secret.load('upstash-redis-rest-token').get())
+    embeddings_cache = UpstashRedisByteStore(client=redis_client,
+                                             ttl=None,
+                                             namespace=os.getenv('EMBEDDING_CACHE_NAMESPACE'))
+
+    cached_embedder = CacheBackedEmbeddings.from_bytes_store(
+        embeddings,
+        embeddings_cache,
+        namespace=embeddings.model_name + "/",
+    )
+    return cached_embedder
+
+
+Settings.embed_model = load_embeddings()
+Settings.llm = None
 
 
 def index_spreadsheet(url: str, title: str, collection_name: str):
@@ -67,12 +89,10 @@ def add_to_index(documents: [Document],
                                                 dim=embedding_dimension,
                                                 overwrite=overwrite)
     storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
-    service_context = ServiceContext.from_defaults(embed_model=load_embeddings(),
-                                                   node_parser=node_parser,
-                                                   llm=None)
+
     VectorStoreIndex.from_documents(documents,
+                                    transformations=[node_parser],
                                     storage_context=storage_context,
-                                    service_context=service_context,
                                     show_progress=True)
 
 
@@ -84,22 +104,46 @@ def index_github_repo(owner: str,
                       ignore_directories: [str] = None,
                       ):
     if ignore_file_extensions is None:
-        ignore_file_extensions = ['.jpg', '.png', '.gitignore', '.csv']
+        ignore_file_extensions = ['.jpg', '.png', '.svg', '.gitignore', '.csv', '.jar']
     if ignore_directories is None:
         ignore_directories = ['.github', '.gitignore', '2021', '2022', 'images']
+    github_client = GithubClient(Secret.load('github-token').get(), verbose=True)
     documents = GithubRepositoryReader(
+        github_client=github_client,
         owner=owner,
         repo=repo,
-        github_token=Secret.load('github-token').get(),
-        ignore_file_extensions=ignore_file_extensions,
-        ignore_directories=ignore_directories,
+        filter_directories=(ignore_directories, EXCLUDE_FILTER_TYPE),
+        filter_file_extensions=(ignore_file_extensions, EXCLUDE_FILTER_TYPE),
     ).load_data(branch=branch)
     for doc in documents:
         doc.metadata['branch'] = branch
         doc.metadata['owner'] = owner
         doc.metadata['repo'] = repo
     add_route_to_docs(documents, 'github')
-    add_to_index(documents, collection_name=collection_name)
+
+    ipynb_docs = [parse_ipynb_doc(doc) for doc in documents if doc.metadata.get('file_name', '').endswith('.ipynb')]
+    md_docs = [doc for doc in documents if doc.metadata.get('file_name', '').endswith('.md')]
+    other_docs = [doc for doc in documents if not doc.metadata.get('file_name', '').endswith(('.ipynb', '.md'))]
+
+    add_to_index(other_docs, collection_name=collection_name)
+    add_to_index(md_docs, collection_name=collection_name, node_parser=MarkdownNodeParser())
+    add_to_index(ipynb_docs, collection_name=collection_name)
+
+
+def parse_ipynb_doc(ipynb_doc: Document) -> Document:
+    ipynb_json = json.loads(ipynb_doc.text)
+    temp_ipynb = tempfile.NamedTemporaryFile(suffix='.ipynb')
+    try:
+        with open(temp_ipynb.name, 'w') as f_out:
+            json.dump(ipynb_json, f_out)
+        parsed = JupyterNotebookParser(temp_ipynb.name)
+        all_cells = parsed.get_all_cells()
+        parsed_text = ''.join([JupyterNotebookParser._join_source_lines(cell.get('source', ''))
+                               for cell in all_cells])
+        ipynb_doc.text = parsed_text
+        return ipynb_doc
+    finally:
+        temp_ipynb.close()
 
 
 def index_slack_history(channel_ids: [str], collection_name: str):
@@ -108,12 +152,11 @@ def index_slack_history(channel_ids: [str], collection_name: str):
                                bot_user_id=BOT_USER_ID,
                                not_ignore_users=[AU_TOMATOR_USER_ID],
                                slack_token=Secret.load('slack-bot-token').get())
+    print('Starting to load slack messages from the last 90 days')
     documents = slack_reader.load_data(channel_ids=channel_ids)
     add_route_to_docs(documents, 'slack')
-    add_to_index(documents,
-                 collection_name=collection_name,
-                 overwrite=False,
-                 )
+    print('Starting to add loaded Slack messages to the index')
+    add_to_index(documents, collection_name=collection_name)
 
 
 def index_faq(document_ids: [str], collection_name: str, question_heading_style_num: int):
@@ -123,25 +166,12 @@ def index_faq(document_ids: [str], collection_name: str, question_heading_style_
         json.dump(creds_dict, f_out)
     gdocs_reader = FAQGoogleDocsReader(service_account_json_path=temp_creds.name,
                                        question_heading_style_num=question_heading_style_num)
+    print('Starting to load FAQ document')
     documents = gdocs_reader.load_data(document_ids=document_ids)
     temp_creds.close()
     add_route_to_docs(documents, 'faq')
+    print('Starting to add loaded FAQ document to the index')
     add_to_index(documents,
                  collection_name=collection_name,
                  overwrite=True,
                  )
-
-
-def load_embeddings() -> CacheBackedEmbeddings:
-    redis_client = Redis(url=Secret.load('upstash-redis-rest-url').get(),
-                         token=Secret.load('upstash-redis-rest-token').get())
-    embeddings_cache = UpstashRedisByteStore(client=redis_client,
-                                             ttl=None,
-                                             namespace=os.getenv('EMBEDDING_CACHE_NAMESPACE'))
-
-    cached_embedder = CacheBackedEmbeddings.from_bytes_store(
-        embeddings,
-        embeddings_cache,
-        namespace=embeddings.model_name + "/",
-    )
-    return cached_embedder

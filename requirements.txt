@@ -27,4 +27,5 @@ nbconvert
 prefect-docker
 langchain-openai
 upstash-redis
+jupyter-notebook-parser
 pinecone-client[grpc]==2.2.4

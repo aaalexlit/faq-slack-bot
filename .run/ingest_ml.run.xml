@@ -9,10 +9,12 @@
       <env name="EMBEDDING_CACHE_NAMESPACE" value="ml_zoomcamp" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/mlops-faq/bin/python" />
+    <option name="SDK_NAME" value="zoomcamp-bot" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ingest" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <EXTENSION ID="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
       <option name="IS_SUBST" value="false" />

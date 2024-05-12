@@ -37,7 +37,7 @@ def index_book_github_repo():
 def index_google_doc():
     document_ids = ["1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8"]
     print('Loading google doc...')
-    index_faq(document_ids, FAQ_COLLECTION_NAME, question_heading_style_num=2)
+    index_faq(document_ids, FAQ_COLLECTION_NAME)
 
 
 @task(name="Index course schedule")

@@ -54,7 +54,7 @@ def index_mage_zoomcamp_github_repo():
 def index_google_doc():
     document_ids = ["19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw"]
     print('Loading google doc...')
-    index_faq(document_ids, FAQ_COLLECTION_NAME, question_heading_style_num=2)
+    index_faq(document_ids, FAQ_COLLECTION_NAME)
 
 
 @task(name="Index course schedule")

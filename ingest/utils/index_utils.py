@@ -159,13 +159,12 @@ def index_slack_history(channel_ids: [str], collection_name: str):
     add_to_index(documents, collection_name=collection_name)
 
 
-def index_faq(document_ids: [str], collection_name: str, question_heading_style_num: int):
+def index_faq(document_ids: [str], collection_name: str):
     temp_creds = tempfile.NamedTemporaryFile()
     creds_dict = GcpCredentials.load("google-drive-creds").service_account_info.get_secret_value()
     with open(temp_creds.name, 'w') as f_out:
         json.dump(creds_dict, f_out)
-    gdocs_reader = FAQGoogleDocsReader(service_account_json_path=temp_creds.name,
-                                       question_heading_style_num=question_heading_style_num)
+    gdocs_reader = FAQGoogleDocsReader(service_account_json_path=temp_creds.name)
     print('Starting to load FAQ document')
     documents = gdocs_reader.load_data(document_ids=document_ids)
     temp_creds.close()

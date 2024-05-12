@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ingest_ml" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
-    <module name="mlops-faq" />
+  <configuration default="false" name="ingest_ml" type="PythonConfigurationType" factoryName="Python">
+    <module name="faq-slack-bot" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -8,24 +8,13 @@
       <env name="PYTHONUNBUFFERED" value="1" />
       <env name="EMBEDDING_CACHE_NAMESPACE" value="ml_zoomcamp" />
     </envs>
-    <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/mlops-faq/bin/python" />
+    <option name="SDK_HOME" value="" />
     <option name="SDK_NAME" value="zoomcamp-bot" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ingest" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <EXTENSION ID="net.ashald.envfile">
-      <option name="IS_ENABLED" value="false" />
-      <option name="IS_SUBST" value="false" />
-      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
-      <option name="IS_IGNORE_MISSING_FILES" value="false" />
-      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
-      <ENTRIES>
-        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
-        <ENTRY IS_ENABLED="false" PARSER="env" IS_EXECUTABLE="false" PATH="ingest/.env" />
-      </ENTRIES>
-    </EXTENSION>
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ingest/ml/ingest_ml.py" />
     <option name="PARAMETERS" value="" />
     <option name="SHOW_COMMAND_LINE" value="false" />

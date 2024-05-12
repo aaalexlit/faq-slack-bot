@@ -25,7 +25,7 @@ definitions:
     zoomcamp_faq_bot_workpool: &zoomcamp-faq-bot-pool
       name: zoomcamp-faq-bot
       work_queue_name: docker_queue
-      job_variables:
+      job_variables: &job-variables
         image: '{{ build_image.image }}'
         env:
           EXECUTION_ENV: zilliz
@@ -41,6 +41,10 @@ definitions:
       day_or: true
     at_23_monday: &at_23_monday
       cron: 0 23 * * 1
+      timezone: Europe/Madrid
+      day_or: true
+    at_23_tuesday: &at_23_tuesday
+      cron: 0 23 * * 2
       timezone: Europe/Madrid
       day_or: true
   actions:
@@ -82,7 +86,7 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index for DE Zoomcamp
     schedules:
-      - *at_1_daily
+      - *at_23_tuesday
     entrypoint: ingest/de/ingest_de.py:fill_de_index
     work_pool: *zoomcamp-faq-bot-pool
     build:
@@ -92,6 +96,30 @@ deployments:
           # Uses the docker_build_config and overrides the dockerfile and image_name fields
           dockerfile: ingest/de.dockerfile
           image_name: aaalexlit/zoomcamp-faq-ingest-de
+    pull:
+      - prefect.deployments.steps.set_working_directory:
+          directory: /usr/src
+  - name: fill-index-zilliz-mlops
+    tags:
+      - mlops-ingest
+      - zoomcamp-faq-bot
+    description: Fill Zilliz index for MLOps Zoomcamp
+    schedules:
+      - *at_1_daily
+    entrypoint: ingest/mlops/ingest_mlops.py:fill_mlops_index
+    work_pool:
+      <<: *zoomcamp-faq-bot-pool
+      job_variables:
+        <<: *job-variables
+        env:
+          EXECUTION_ENV: zilliz-cluster
+    build:
+      - prefect.deployments.steps.run_shell_script: *shell-script-config
+      - prefect_docker.deployments.steps.build_docker_image:
+          <<: *docker-build-config
+          # Uses the docker_build_config and overrides the dockerfile and image_name fields
+          dockerfile: ingest/mlops.dockerfile
+          image_name: aaalexlit/zoomcamp-faq-ingest-mlops
     pull:
       - prefect.deployments.steps.set_working_directory:
           directory: /usr/src

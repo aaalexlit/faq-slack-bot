@@ -82,6 +82,13 @@ def add_to_index(documents: [Document],
         milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
                                                 dim=embedding_dimension,
                                                 overwrite=overwrite)
+    elif environment == 'zilliz-cluster':
+        milvus_vector_store = MilvusVectorStore(
+            uri=Secret.load('zilliz-public-endpoint').get(),
+            token=Secret.load('zilliz-api-key').get(),
+            collection_name=collection_name,
+            dim=embedding_dimension,
+            overwrite=overwrite)
     else:
         milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
                                                 uri=Secret.load('zilliz-cloud-uri').get(),

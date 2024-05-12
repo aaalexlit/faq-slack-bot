@@ -55,7 +55,7 @@ MLOPS_INDEX_NAME = 'mlops-faq-bot'
 ML_FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 DE_FAQ_COLLECTION_NAME = 'dezoomcamp_faq_git'
 
-GPT_MODEL_NAME = 'gpt-3.5-turbo-0613'
+GPT_MODEL_NAME = 'gpt-3.5-turbo-0125'
 
 ML_FAQ_TOOL_DESCRIPTION = ("Useful for retrieving specific context from the course FAQ document as well as "
                            "information about course syllabus and deadlines, schedule in other words. "

@@ -10,7 +10,9 @@ def create_gcp_creds_block():
     block_name = "google-drive-creds"
     try:
         GcpCredentials.load(block_name)
+        print(f"Block {block_name} exists")
     except ValueError:
+        print(f"Creating Block {block_name}")
         with open("../keys/service_account_key.json", 'r') as f_in:
             service_account_info_str = f_in.read()
 
@@ -19,25 +21,29 @@ def create_gcp_creds_block():
         GcpCredentials(
             service_account_info=service_account_info
         ).save(block_name)
+        time.sleep(10)
 
 
 def create_secret_block(block_name: str, env_var_name: str) -> None:
     try:
         Secret.load(block_name)
+        print(f"Block {block_name} exists")
     except ValueError:
+        print(f"Creating Block {block_name}")
         Secret(value=os.getenv(env_var_name)).save(name=block_name)
+        time.sleep(10)
 
 
 def create_pinecone_secrets():
     create_secret_block('pinecone-api-key', 'PINECONE_API_KEY')
-    time.sleep(10)
     create_secret_block('pinecone-env', 'PINECONE_ENV')
 
 
 def create_zilliz_secrets():
     create_secret_block('zilliz-cloud-uri', 'ZILLIZ_CLOUD_URI')
-    time.sleep(10)
     create_secret_block('zilliz-cloud-api-key', 'ZILLIZ_CLOUD_API_KEY')
+    create_secret_block('zilliz-public-endpoint', 'ZILLIZ_PUBLIC_ENDPOINT')
+    create_secret_block('zilliz-api-key', 'ZILLIZ_API_KEY')
 
 
 def create_slack_secrets():
@@ -50,19 +56,13 @@ def create_github_secrets():
 
 def create_upstash_redis_secrets():
     create_secret_block('upstash-redis-rest-url', 'UPSTASH_REDIS_REST_URL')
-    time.sleep(10)
     create_secret_block('upstash-redis-rest-token', 'UPSTASH_REDIS_REST_TOKEN')
 
 
 if __name__ == '__main__':
     create_gcp_creds_block()
-    time.sleep(10)
     create_pinecone_secrets()
-    time.sleep(10)
     create_zilliz_secrets()
-    time.sleep(10)
     create_slack_secrets()
-    time.sleep(10)
     create_github_secrets()
-    time.sleep(10)
     create_upstash_redis_secrets()

@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 import pinecone  # type: ignore
-from langchain.document_loaders import GoogleDriveLoader, GitLoader
+from langchain_community.document_loaders import GoogleDriveLoader, GitLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Pinecone

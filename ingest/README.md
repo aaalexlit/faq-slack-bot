@@ -7,9 +7,9 @@ Steps to change/run the deployment are described in [prefect.md](prefect.md)
 
 ## For MLOps Zoomcamp
 
-Execute [ingest.py](mlops/ingest.py)
+Execute [ingest.py](mlops/ingest_mlops_old.py)
 ```shell
-python ingest.py
+python ingest_mlops_old.py
 ```
 
 # Setup Prefect

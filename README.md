@@ -23,10 +23,10 @@ Use any python virtual environment manager of your preference
 1. Set `PINECONE_API_KEY` and `PINECONE_ENV` 
 environmental variables accordingly
  
-2. run [ingest/ingest.py](ingest/mlops/ingest.py) 
+2. run [ingest/ingest.py](ingest/mlops/ingest_mlops_old.py) 
 
     ```bash
-    python ingest.py
+    python ingest_mlops_old.py
     ```
 # Test QA pipeline locally 
 1. Set `OPENAI_API_KEY`, `PINECONE_API_KEY`, and `PINECONE_ENV` 

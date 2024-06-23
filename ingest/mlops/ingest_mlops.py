@@ -2,7 +2,7 @@ import os
 
 from prefect import flow, task
 
-from ingest.utils.index_utils import index_spreadsheet, index_github_repo, \
+from ingest.utils.index_utils import index_github_repo, \
     index_slack_history, index_faq
 
 SLACK_CHANNEL_ID = 'C02R98X7DS9'
@@ -29,23 +29,6 @@ def index_google_doc():
     index_faq(document_ids, COLLECTION_NAME)
 
 
-@task(name="Index course schedule")
-def index_course_schedule():
-    url = (
-        'https://docs.google.com/spreadsheets/d/e/2PACX-1vRNTwA0Of1lyprYpn2YxU-'
-        'l0gvNeq-up7g7ITB42nPf2gT9Qd3PTzqTmkjAZjk1s__r7D99CsJfcZEO/pubhtml')
-    title = 'MLOps Zoomcamp 2023 Deadlines'
-    index_spreadsheet(url, title, COLLECTION_NAME)
-
-
-@task(name="Index project evaluation criteria")
-def index_evaluation_criteria():
-    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
-           '-1vQCwqAtkjl07MTW-SxWUK9GUvMQ3Pv_fF8UadcuIYLgHa0PlNu9BRWtfLgivI8xSCncQs82HDwGXSm3/pubhtml')
-    title = 'ML Zoomcamp project evaluation criteria : Project criteria'
-    index_spreadsheet(url, title, COLLECTION_NAME)
-
-
 @task(name="Index slack messages")
 def index_slack_messages():
     channel_ids = [SLACK_CHANNEL_ID]
@@ -57,8 +40,6 @@ def fill_mlops_index():
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
     index_google_doc()
     index_slack_messages.submit(wait_for=[index_google_doc])
-    index_course_schedule.submit(wait_for=[index_google_doc])
-    # index_evaluation_criteria.submit(wait_for=[index_google_doc])
     index_course_github_repo.submit(wait_for=[index_google_doc])
 
 

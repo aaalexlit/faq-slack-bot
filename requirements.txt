@@ -10,17 +10,15 @@ prefect
 prefect-gcp
 GitPython
 pymilvus
-wandb
 llama-index-core
 llama-index-readers-web
-llama-index-callbacks-wandb
 llama-index-readers-github
 llama-index-vector-stores-milvus
 llama-index-embeddings-langchain
 llama-index-postprocessor-cohere-rerank
 llama-index-llms-langchain
+llama-index-llms-fireworks
 ipython
-pipenv
 cohere
 trafilatura
 nbconvert
@@ -28,4 +26,3 @@ prefect-docker
 langchain-openai
 upstash-redis
 jupyter-notebook-parser
-pinecone-client[grpc]==2.2.4

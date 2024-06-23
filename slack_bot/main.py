@@ -6,14 +6,13 @@ import re
 import sys
 import uuid
 
-from cohere import CohereAPIError
+from cohere.core import ApiError as CohereAPIError
 from langchain import callbacks
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langsmith import Client
 from llama_index.core import ChatPromptTemplate
-from llama_index.core import ServiceContext
-from llama_index.core import VectorStoreIndex
+from llama_index.core import VectorStoreIndex, Settings
 from llama_index.core import get_response_synthesizer
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.postprocessor import TimeWeightedPostprocessor
@@ -407,9 +406,6 @@ def get_retriever_query_engine(collection_name: str,
                                zoomcamp_name: str,
                                cohort_year: int,
                                course_start_date: str):
-    service_context = ServiceContext.from_defaults(embed_model=embeddings,
-                                                   llm=ChatOpenAI(model=GPT_MODEL_NAME,
-                                                                  temperature=0.7))
     if os.getenv('LOCAL_MILVUS', None):
         localhost = os.getenv('LOCALHOST', 'localhost')
         vector_store = MilvusVectorStore(collection_name=collection_name,
@@ -430,15 +426,17 @@ def get_retriever_query_engine(collection_name: str,
                                              dim=embedding_dimension,
                                              overwrite=False)
     vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
-                                                            service_context=service_context)
+                                                            embed_model=embeddings)
     cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=4)
     recency_postprocessor = get_time_weighted_postprocessor()
     node_postprocessors = [recency_postprocessor, cohere_rerank]
     qa_prompt_template = get_prompt_template(zoomcamp_name=zoomcamp_name,
                                              cohort_year=cohort_year,
                                              course_start_date=course_start_date)
-    response_synthesizer = get_response_synthesizer(service_context=service_context,
-                                                    text_qa_template=qa_prompt_template,
+    Settings.llm = ChatOpenAI(model=GPT_MODEL_NAME,
+                              temperature=0.7)
+
+    response_synthesizer = get_response_synthesizer(text_qa_template=qa_prompt_template,
                                                     verbose=True,
                                                     )
     return RetrieverQueryEngine(vector_store_index.as_retriever(similarity_top_k=15),

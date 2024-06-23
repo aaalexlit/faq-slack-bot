@@ -79,7 +79,8 @@ def add_to_index(documents: [Document],
         node_parser = SentenceSplitter.from_defaults(chunk_size=512, chunk_overlap=50)
     environment = os.getenv('EXECUTION_ENV', 'local')
     if environment == 'local':
-        milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
+        milvus_vector_store = MilvusVectorStore(uri='http://localhost:19530',
+                                                collection_name=collection_name,
                                                 dim=embedding_dimension,
                                                 overwrite=overwrite)
     elif environment == 'zilliz-cluster':

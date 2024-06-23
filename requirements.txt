@@ -26,3 +26,4 @@ prefect-docker
 langchain-openai
 upstash-redis
 jupyter-notebook-parser
+requests==2.31.0

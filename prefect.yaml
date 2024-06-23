@@ -4,7 +4,7 @@
 
 # Generic metadata about this project
 name: zoomcamp-bot-index
-prefect-version: 2.16.3
+prefect-version: 2.19.5
 
 # build section allows you to manage and build docker images
 build:
@@ -31,8 +31,8 @@ definitions:
           EXECUTION_ENV: zilliz
         auto_remove: true
   schedules:
-    at_23_daily: &at_23_daily
-      cron: 0 23 * * *
+    at_0_daily: &at_0_daily
+      cron: 0 0 * * *
       timezone: Europe/Madrid
       day_or: true
     at_1_daily: &at_1_daily
@@ -120,6 +120,30 @@ deployments:
           # Uses the docker_build_config and overrides the dockerfile and image_name fields
           dockerfile: ingest/mlops.dockerfile
           image_name: aaalexlit/zoomcamp-faq-ingest-mlops
+    pull:
+      - prefect.deployments.steps.set_working_directory:
+          directory: /usr/src
+  - name: fill-index-zilliz-llm
+    tags:
+      - llm-ingest
+      - zoomcamp-faq-bot
+    description: Fill Zilliz index for LLM Zoomcamp
+    schedules:
+      - *at_0_daily
+    entrypoint: ingest/llm/ingest_llm.py:fill_llm_index
+    work_pool:
+      <<: *zoomcamp-faq-bot-pool
+      job_variables:
+        <<: *job-variables
+        env:
+          EXECUTION_ENV: zilliz-cluster
+    build:
+      - prefect.deployments.steps.run_shell_script: *shell-script-config
+      - prefect_docker.deployments.steps.build_docker_image:
+          <<: *docker-build-config
+          # Uses the docker_build_config and overrides the dockerfile and image_name fields
+          dockerfile: ingest/llm.dockerfile
+          image_name: aaalexlit/zoomcamp-faq-ingest-llm
     pull:
       - prefect.deployments.steps.set_working_directory:
           directory: /usr/src

@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 DE_CHANNELS = ['C01FABYF2RG', 'C06CBSE16JC', 'C06BZJX8PSP']
 ML_CHANNELS = ['C0288NJ5XSA', 'C05C3SGMLBB', 'C05DTQECY66']
 MLOPS_CHANNELS = ['C02R98X7DS9', 'C06C1N46CQ1', 'C0735558X52']
+LLM_CHANNELS = ['C079QE5NAMP', 'C078X7REVN3', 'C06TEGTGM3J']
 
-ALLOWED_CHANNELS = DE_CHANNELS + ML_CHANNELS + MLOPS_CHANNELS
+ALLOWED_CHANNELS = DE_CHANNELS + ML_CHANNELS + MLOPS_CHANNELS + LLM_CHANNELS
 
 PROJECT_NAME = 'datatalks-faq-slackbot'
 ML_ZOOMCAMP_PROJECT_NAME = 'ml-zoomcamp-slack-bot'
@@ -44,6 +45,7 @@ DE_ZOOMCAMP_PROJECT_NAME = 'de-zoomcamp-slack-bot'
 ML_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 DE_COLLECTION_NAME = 'dezoomcamp_faq_git'
 MLOPS_COLLECTION_NAME = 'mlopszoomcamp'
+LLM_COLLECTION_NAME = 'llmzoomcamp'
 
 GPT_MODEL_NAME = 'gpt-3.5-turbo-0125'
 
@@ -180,6 +182,8 @@ def handle_message_events(body):
                 response = mlops_query_engine.query(question)
             elif channel_id in ML_CHANNELS:
                 response = ml_query_engine.query(question)
+            elif channel_id in LLM_CHANNELS:
+                response = llm_query_engine.query(question)
             else:
                 response = de_query_engine.query(question)
             # get the id of the last run that's supposedly a run that delivers the final answer
@@ -340,6 +344,10 @@ def get_greeting_message(channel_id):
         name = 'ML'
         link = '1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8/edit#heading=h.98qq6wfuzeck'
         repo = 'machine-learning-zoomcamp'
+    elif channel_id in LLM_CHANNELS:
+        name = 'LLM'
+        link = '1m2KexowAXTmexfC5rVTCSnaShvdUQ8Ag2IEiwBDHxN0/edit#heading=h.o29af0z8xx88'
+        repo = 'llm-zoomcamp'
     else:
         name = 'DE'
         link = '19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw/edit#heading=h.o29af0z8xx88'
@@ -413,7 +421,7 @@ def get_retriever_query_engine(collection_name: str,
                                          overwrite=False,
                                          uri=f'http://{localhost}:19530')
     else:
-        if collection_name == MLOPS_COLLECTION_NAME:
+        if collection_name in [MLOPS_COLLECTION_NAME, LLM_COLLECTION_NAME]:
             vector_store = MilvusVectorStore(collection_name=collection_name,
                                              uri=os.getenv("ZILLIZ_PUBLIC_ENDPOINT"),
                                              token=os.getenv("ZILLIZ_API_KEY"),
@@ -483,4 +491,9 @@ if __name__ == "__main__":
                                                     zoomcamp_name='MLOps',
                                                     cohort_year=2024,
                                                     course_start_date='13 May 2024')
+
+    llm_query_engine = get_retriever_query_engine(collection_name=LLM_COLLECTION_NAME,
+                                                  zoomcamp_name='LLM',
+                                                  cohort_year=2024,
+                                                  course_start_date='17 June 2024')
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

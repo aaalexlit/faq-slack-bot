@@ -1,7 +1,5 @@
 FROM prefecthq/prefect:2-python3.10
 
-ENV EMBEDDING_CACHE_NAMESPACE=ml_zoomcamp
-
 RUN apt-get update && \
     apt-get install -y gcc python3-dev
 
@@ -11,6 +9,8 @@ WORKDIR /usr/src
 
 COPY ingest/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+
+ENV EMBEDDING_CACHE_NAMESPACE=ml_zoomcamp
 
 COPY ingest/ml/ingest_ml.py ingest/ml/
 COPY ingest/readers ingest/readers

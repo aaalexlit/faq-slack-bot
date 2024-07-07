@@ -127,7 +127,8 @@ class SlackReader(BasePydanticReader):
                     **conversations_replies_kwargs  # type: ignore
                 )
                 messages = result["messages"]
-                messages_text.extend(message["text"] for message in messages if message['user'] != self.bot_user_id)
+                messages_text.extend(message["text"] for message in messages if message['user'] != self.bot_user_id
+                                     and message['user'] not in self.not_ignore_users)
                 messages_text.extend(message["attachments"][0]["text"] for message in messages if
                                      message['user'] in self.not_ignore_users
                                      and "attachments" in message
@@ -229,10 +230,10 @@ class SlackReader(BasePydanticReader):
 
 
 if __name__ == "__main__":
-    reader = SlackReader(earliest_date=datetime(2024, 1, 10),
+    reader = SlackReader(earliest_date=datetime(2024, 7, 4),
                          bot_user_id='U05DM3PEJA2',
                          not_ignore_users=['U01S08W6Z9T'])
-    for thread in reader.load_data(channel_ids=["C01FABYF2RG"]):
+    for thread in reader.load_data(channel_ids=["C02R98X7DS9"]):
         logger.info(f'Text: {thread.text}')
         logger.info(f'Metadata: {thread.metadata}')
         logger.info('----------------------------')

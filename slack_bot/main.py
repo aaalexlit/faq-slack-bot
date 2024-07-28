@@ -47,7 +47,7 @@ DE_COLLECTION_NAME = 'dezoomcamp_faq_git'
 MLOPS_COLLECTION_NAME = 'mlopszoomcamp'
 LLM_COLLECTION_NAME = 'llmzoomcamp'
 
-GPT_MODEL_NAME = 'gpt-3.5-turbo-0125'
+GPT_MODEL_NAME = 'gpt-4o-mini-2024-07-18'
 
 # Event API & Web API
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')

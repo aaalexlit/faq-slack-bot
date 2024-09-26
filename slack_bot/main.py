@@ -479,8 +479,8 @@ if __name__ == "__main__":
 
     ml_query_engine = get_retriever_query_engine(collection_name=ML_COLLECTION_NAME,
                                                  zoomcamp_name='Machine Learning',
-                                                 cohort_year=2023,
-                                                 course_start_date='11 September 2023')
+                                                 cohort_year=2024,
+                                                 course_start_date='16 September 2024')
 
     de_query_engine = get_retriever_query_engine(collection_name=DE_COLLECTION_NAME,
                                                  zoomcamp_name='Data Engineering',

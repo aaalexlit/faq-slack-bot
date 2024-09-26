@@ -47,6 +47,10 @@ definitions:
       cron: 0 23 * * 2
       timezone: Europe/Madrid
       day_or: true
+    at_23_wednesday: &at_23_wednesday
+      cron: 0 23 * * 3
+      timezone: Europe/Madrid
+      day_or: true
   actions:
     docker_build:
       - prefect.deployments.steps.run_shell_script: &shell-script-config
@@ -68,7 +72,7 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index for ML Zoomcamp
     schedules:
-      - *at_23_monday
+      - *at_0_daily
     entrypoint: ingest/ml/ingest_ml.py:fill_ml_index
     work_pool: *zoomcamp-faq-bot-pool
     build:
@@ -105,7 +109,7 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index for MLOps Zoomcamp
     schedules:
-      - *at_1_daily
+      - *at_23_monday
     entrypoint: ingest/mlops/ingest_mlops.py:fill_mlops_index
     work_pool:
       <<: *zoomcamp-faq-bot-pool
@@ -129,7 +133,7 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index for LLM Zoomcamp
     schedules:
-      - *at_0_daily
+      - *at_23_wednesday
     entrypoint: ingest/llm/ingest_llm.py:fill_llm_index
     work_pool:
       <<: *zoomcamp-faq-bot-pool

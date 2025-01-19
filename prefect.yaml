@@ -72,7 +72,7 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index for ML Zoomcamp
     schedules:
-      - *at_0_daily
+      - *at_23_tuesday
     entrypoint: ingest/ml/ingest_ml.py:fill_ml_index
     work_pool: *zoomcamp-faq-bot-pool
     build:
@@ -90,7 +90,7 @@ deployments:
       - zoomcamp-faq-bot
     description: Fill Zilliz index for DE Zoomcamp
     schedules:
-      - *at_23_tuesday
+      - *at_0_daily
     entrypoint: ingest/de/ingest_de.py:fill_de_index
     work_pool: *zoomcamp-faq-bot-pool
     build:

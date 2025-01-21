@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from http.client import IncompleteRead
 from ssl import SSLContext
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from llama_index.core.bridge.pydantic import PrivateAttr
 from llama_index.core.readers.base import BasePydanticReader
@@ -107,7 +107,7 @@ class SlackReader(BasePydanticReader):
 
         """Read a message."""
 
-        messages_text: List[str] = []
+        messages_text: list[str] = []
         next_cursor = None
         while True:
             try:
@@ -147,12 +147,12 @@ class SlackReader(BasePydanticReader):
                         excluded_llm_metadata_keys=EXCLUDED_METADATA_FIELDS
                         )
 
-    def _read_channel(self, channel_id: str) -> List[Document]:
+    def _read_channel(self, channel_id: str) -> list[Document]:
         from slack_sdk.errors import SlackApiError
 
         """Read a channel."""
 
-        thread_documents: List[Document] = []
+        thread_documents: list[Document] = []
         next_cursor = None
         while True:
             try:
@@ -215,7 +215,7 @@ class SlackReader(BasePydanticReader):
             return True
         return False
 
-    def load_data(self, channel_ids: List[str]) -> List[Document]:
+    def load_data(self, channel_ids: list[str]) -> list[Document]:
         """Load data from the input directory.
 
         Args:

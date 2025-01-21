@@ -300,6 +300,10 @@ def links_to_source_nodes(response):
             file_path = node.metadata['file_path']
             link_to_file = build_repo_path(owner=owner, repo=repo, branch=branch, file_path=file_path)
             res.add(f'<{link_to_file}| GitHub-{repo}-{file_path.split("/")[-1]}>')
+        elif 'yt_link' in node.metadata:
+            yt_link = node.metadata['yt_link']
+            yt_name = node.metadata['yt_name']
+            res.add(f'<{yt_link}| Youtube-{yt_name}>')
     return '\n'.join(res)
 
 
@@ -484,8 +488,8 @@ if __name__ == "__main__":
 
     de_query_engine = get_retriever_query_engine(collection_name=DE_COLLECTION_NAME,
                                                  zoomcamp_name='Data Engineering',
-                                                 cohort_year=2024,
-                                                 course_start_date='15 January 2024')
+                                                 cohort_year=2025,
+                                                 course_start_date='13 January 2025')
 
     mlops_query_engine = get_retriever_query_engine(collection_name=MLOPS_COLLECTION_NAME,
                                                     zoomcamp_name='MLOps',

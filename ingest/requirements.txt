@@ -17,4 +17,4 @@ nbconvert==7.16.4
 ipython==8.25.0
 upstash-redis==1.1.0
 jupyter-notebook-parser==0.1.4
-
+youtube-transcript-api==0.6.3

@@ -21,6 +21,7 @@ from upstash_redis import Redis
 
 from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
 from ingest.readers.slack_reader import SlackReader
+from ingest.readers.youtube_reader import YoutubeReader
 
 BOT_USER_ID = 'U05DM3PEJA2'
 AU_TOMATOR_USER_ID = 'U01S08W6Z9T'
@@ -71,12 +72,12 @@ def add_route_to_docs(docs: [Document], route_name: str):
         doc.excluded_llm_metadata_keys.append(route_key_name)
 
 
-def add_to_index(documents: [Document],
+def add_to_index(documents: list[Document],
                  collection_name: str,
                  overwrite: bool = False,
                  node_parser: NodeParser = None):
-    if not node_parser:
-        node_parser = SentenceSplitter.from_defaults(chunk_size=512, chunk_overlap=50)
+    sentence_splitter = SentenceSplitter.from_defaults(chunk_size=512, chunk_overlap=50,
+                                                       tokenizer=embeddings.client.tokenizer)
     environment = os.getenv('EXECUTION_ENV', 'local')
     if environment == 'local':
         milvus_vector_store = MilvusVectorStore(uri='http://localhost:19530',
@@ -97,9 +98,10 @@ def add_to_index(documents: [Document],
                                                 dim=embedding_dimension,
                                                 overwrite=overwrite)
     storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
+    transformations = [t for t in [node_parser, sentence_splitter] if t is not None]
 
     VectorStoreIndex.from_documents(documents,
-                                    transformations=[node_parser],
+                                    transformations=transformations,
                                     storage_context=storage_context,
                                     show_progress=True)
 
@@ -182,3 +184,10 @@ def index_faq(document_ids: [str], collection_name: str):
                  collection_name=collection_name,
                  overwrite=True,
                  )
+
+
+def index_youtube(video_ids: list[str], collection_name: str):
+    yt_reader = YoutubeReader()
+    documents = yt_reader.load_data(video_ids=video_ids, tokenizer=embeddings.client.tokenizer)
+    print('Starting to add loaded Video transcripts to the index')
+    add_to_index(documents, collection_name=collection_name)

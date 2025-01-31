@@ -27,3 +27,4 @@ langchain-openai
 upstash-redis
 jupyter-notebook-parser
 requests==2.31.0
+youtube-transcript-api

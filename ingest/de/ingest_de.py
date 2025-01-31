@@ -3,7 +3,7 @@ import os
 from prefect import flow, task
 
 from ingest.utils.index_utils import index_spreadsheet, index_github_repo, \
-    index_slack_history, index_faq
+    index_slack_history, index_faq, index_youtube
 
 DE_CHANNEL_ID = 'C01FABYF2RG'
 FAQ_COLLECTION_NAME = 'dezoomcamp_faq_git'
@@ -20,7 +20,8 @@ def index_course_github_repo():
                       repo=repo,
                       branch=branch,
                       collection_name=FAQ_COLLECTION_NAME,
-                      ignore_directories=['.github', '.gitignore', 'cohorts/2022', 'cohorts/2023', 'images'],
+                      ignore_directories=['.github', '.gitignore', 'cohorts/2022', 'cohorts/2023', 'cohorts/2024',
+                                          'images'],
                       )
 
 
@@ -66,18 +67,16 @@ def index_course_schedule():
     index_spreadsheet(url, title, FAQ_COLLECTION_NAME)
 
 
-@task(name="Index project evaluation criteria")
-def index_evaluation_criteria():
-    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
-           '-1vQCwqAtkjl07MTW-SxWUK9GUvMQ3Pv_fF8UadcuIYLgHa0PlNu9BRWtfLgivI8xSCncQs82HDwGXSm3/pubhtml')
-    title = 'ML Zoomcamp project evaluation criteria : Project criteria'
-    index_spreadsheet(url, title, FAQ_COLLECTION_NAME)
-
-
 @task(name="Index slack messages")
 def index_slack_messages():
     channel_ids = [DE_CHANNEL_ID]
     index_slack_history(channel_ids, FAQ_COLLECTION_NAME)
+
+
+@task(name="Index QA videos subtitles")
+def index_yt_subtitles():
+    video_ids = ['X8cEEwi8DTM']
+    index_youtube(video_ids, FAQ_COLLECTION_NAME)
 
 
 @flow(name="Update DE info Milvus index", log_prints=True)
@@ -88,8 +87,7 @@ def fill_de_index():
     index_course_schedule.submit(wait_for=[index_google_doc])
     # index_evaluation_criteria.submit(wait_for=[index_google_doc])
     index_course_github_repo.submit(wait_for=[index_google_doc])
-    index_mage_zoomcamp_github_repo.submit(wait_for=[index_google_doc])
-    index_risingwave_zoomcamp_github_repo.submit(wait_for=[index_google_doc])
+    index_yt_subtitles.submit(wait_for=[index_google_doc])
 
 
 if __name__ == '__main__':

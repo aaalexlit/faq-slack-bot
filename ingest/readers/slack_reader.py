@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.client import IncompleteRead
 from ssl import SSLContext
 from typing import Any, Optional
@@ -176,10 +176,12 @@ class SlackReader(BasePydanticReader):
                 # Print results
                 logger.info(f"{len(conversation_history)} messages found in {channel_id}")
 
-                thread_documents.extend(
-                    self._read_message(channel_id, message["ts"]) for message in conversation_history
-                    if self.is_for_indexing(message)
-                )
+                for message in conversation_history:
+                    if self.is_for_indexing(message):
+                        read_message: Document = self._read_message(channel_id, message["ts"])
+                        if read_message.text != "":
+                            thread_documents.append(read_message)
+
                 if not result["has_more"]:
                     break
                 next_cursor = result["response_metadata"]["next_cursor"]
@@ -230,10 +232,10 @@ class SlackReader(BasePydanticReader):
 
 
 if __name__ == "__main__":
-    reader = SlackReader(earliest_date=datetime(2024, 7, 4),
+    reader = SlackReader(earliest_date=datetime.now() - timedelta(days=2),
                          bot_user_id='U05DM3PEJA2',
                          not_ignore_users=['U01S08W6Z9T'])
     for thread in reader.load_data(channel_ids=["C02R98X7DS9"]):
-        logger.info(f'Text: {thread.text}')
-        logger.info(f'Metadata: {thread.metadata}')
-        logger.info('----------------------------')
+            logger.info(f'Text: {thread.text}')
+            logger.info(f'Metadata: {thread.metadata}')
+            logger.info('----------------------------')

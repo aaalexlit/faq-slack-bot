@@ -8,7 +8,6 @@ import uuid
 
 from cohere.core import ApiError as CohereAPIError
 from langchain import callbacks
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langsmith import Client
 from llama_index.core import ChatPromptTemplate
@@ -19,6 +18,7 @@ from llama_index.core.postprocessor import TimeWeightedPostprocessor
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.vector_stores.milvus import MilvusVectorStore
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from requests.exceptions import ChunkedEncodingError
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -256,7 +256,8 @@ def handle_message_events(body):
         client.chat_postMessage(channel=channel_id,
                                 thread_ts=event_ts,
                                 blocks=response_blocks,
-                                text=response_text
+                                text=response_text,
+                                unfurl_media=False
                                 )
         client.chat_delete(channel=channel_id,
                            ts=posted_greeting_message.data['ts'])
@@ -302,8 +303,8 @@ def links_to_source_nodes(response):
             res.add(f'<{link_to_file}| GitHub-{repo}-{file_path.split("/")[-1]}>')
         elif 'yt_link' in node.metadata:
             yt_link = node.metadata['yt_link']
-            yt_name = node.metadata['yt_name']
-            res.add(f'<{yt_link}| Youtube-{yt_name}>')
+            yt_title = node.metadata['yt_title']
+            res.add(f'<{yt_link}| Youtube-{yt_title}>')
     return '\n'.join(res)
 
 
@@ -473,8 +474,8 @@ if __name__ == "__main__":
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     while True:
         try:
-            embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
-            embedding_dimension = len(embeddings.embed_query("test"))
+            embeddings = HuggingFaceEmbedding(model_name='BAAI/bge-base-en-v1.5')
+            embedding_dimension = len(embeddings.get_text_embedding("test"))
         except ChunkedEncodingError as e:
             continue
         break

@@ -62,4 +62,4 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ matrix.component.image }}:${{ steps.gitsha.outputs.sha }}
-            ${{ env.REGISTRY }}/${{ matrix.component.image }}:latest   # optional
+            ${{ env.REGISTRY }}/${{ matrix.component.image }}:latest

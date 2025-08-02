@@ -31,7 +31,6 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_PREFIX: aaalexlit/zoomcamp-faq-ingest-
-  # Resolve the tag chosen by the user (or fallback to 'latest')
   IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
 
 jobs:
@@ -39,7 +38,20 @@ jobs:
     name: Execute ${{ inputs.component }} ingestion
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - id: auth
+        name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACC_KEY }}
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -49,11 +61,10 @@ jobs:
 
       - name: Pull the image
         run: |
-          docker pull "${REGISTRY}/${IMAGE_PREFIX}${{ inputs.component }}:${IMAGE_TAG}"
+          docker pull "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}${{ inputs.component }}:${{ env.IMAGE_TAG }}"
 
       - name: Run ingestion
         env:
-          # Common environment variables
           EXECUTION_ENV: zilliz-cluster
           ZILLIZ_PUBLIC_ENDPOINT: ${{ secrets.ZILLIZ_PUBLIC_ENDPOINT }}
           ZILLIZ_API_KEY: ${{ secrets.ZILLIZ_API_KEY }}
@@ -65,6 +76,8 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           EMBEDDING_CACHE_NAMESPACE: ${{ inputs.component }}_zoomcamp
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # point into the workspace-mounted file
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
           docker run --rm \
             -e EXECUTION_ENV \
@@ -78,4 +91,6 @@ jobs:
             -e UPSTASH_REDIS_REST_TOKEN \
             -e EMBEDDING_CACHE_NAMESPACE \
             -e OPENAI_API_KEY \
-            "${REGISTRY}/${IMAGE_PREFIX}${{ inputs.component }}:${IMAGE_TAG}"
+            -e GOOGLE_APPLICATION_CREDENTIALS \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}:ro" \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}${{ inputs.component }}:${{ env.IMAGE_TAG }}"

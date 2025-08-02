@@ -1,4 +1,4 @@
-name: Build Ingestion Docker Images
+name: Build Ingestion Docker Image
 
 on:
   push:

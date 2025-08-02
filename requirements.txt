@@ -6,8 +6,6 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 sentence-transformers
-prefect
-prefect-gcp
 GitPython
 pymilvus
 llama-index-core
@@ -22,7 +20,6 @@ ipython
 cohere
 trafilatura
 nbconvert
-prefect-docker
 langchain-openai
 upstash-redis
 jupyter-notebook-parser

@@ -16,9 +16,6 @@ WORKDIR /usr/src
 COPY ingest/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Runtime environment variable(s)
-ENV EMBEDDING_CACHE_NAMESPACE=de_zoomcamp
-
 COPY ingest/de/ingest_de.py ingest/de/
 COPY ingest/readers ingest/readers
 COPY ingest/utils ingest/utils

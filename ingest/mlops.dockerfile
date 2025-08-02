@@ -16,9 +16,6 @@ WORKDIR /usr/src
 COPY ingest/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Runtime environment variable(s)
-ENV EMBEDDING_CACHE_NAMESPACE=mlops_zoomcamp
-
 COPY ingest/mlops/ingest_mlops.py ingest/mlops/
 COPY ingest/readers ingest/readers
 COPY ingest/utils ingest/utils

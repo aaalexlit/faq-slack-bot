@@ -61,7 +61,7 @@ jobs:
 
       - name: Run ingestion
         env:
-          EXECUTION_ENV: zilliz-cluster
+          EXECUTION_ENV: ${{ (inputs.component != 'ml' && inputs.component != 'de') && 'zilliz-cluster' || '' }}
           ZILLIZ_PUBLIC_ENDPOINT: ${{ secrets.ZILLIZ_PUBLIC_ENDPOINT }}
           ZILLIZ_API_KEY: ${{ secrets.ZILLIZ_API_KEY }}
           ZILLIZ_CLOUD_URI: ${{ secrets.ZILLIZ_CLOUD_URI }}

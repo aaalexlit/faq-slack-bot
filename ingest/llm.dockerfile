@@ -16,9 +16,6 @@ WORKDIR /usr/src
 COPY ingest/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Runtime environment variable(s)
-ENV EMBEDDING_CACHE_NAMESPACE=llm_zoomcamp
-
 # Copy application source code into the container
 COPY ingest/llm/ingest_llm.py ingest/llm/
 COPY ingest/readers ingest/readers

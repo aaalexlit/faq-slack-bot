@@ -16,8 +16,6 @@ WORKDIR /usr/src
 COPY ingest/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV EMBEDDING_CACHE_NAMESPACE=ml_zoomcamp
-
 COPY ingest/ml/ingest_ml.py ingest/ml/
 COPY ingest/readers ingest/readers
 COPY ingest/utils ingest/utils

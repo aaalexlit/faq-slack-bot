@@ -1,0 +1,81 @@
+name: Run Ingestion
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "Component to run (ml, de, mlops, llm)"
+        required: true
+        type: choice
+        options:
+          - ml
+          - de
+          - mlops
+          - llm
+      image_tag:
+        description: "Docker image tag to run (defaults to 'latest')"
+        default: latest
+        required: false
+  workflow_call:
+    inputs:
+      component:
+        description: "Component to run (ml, de, mlops, llm)"
+        required: true
+        type: string
+      image_tag:
+        description: "Docker image tag to run (defaults to 'latest')"
+        default: latest
+        required: false
+        type: string
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: aaalexlit/zoomcamp-faq-ingest-
+  # Resolve the tag chosen by the user (or fallback to 'latest')
+  IMAGE_TAG: ${{ inputs.image_tag || 'latest' }}
+
+jobs:
+  ingest:
+    name: Execute ${{ inputs.component }} ingestion
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Pull the image
+        run: |
+          docker pull "${REGISTRY}/${IMAGE_PREFIX}${{ inputs.component }}:${IMAGE_TAG}"
+
+      - name: Run ingestion
+        env:
+          # Common environment variables
+          EXECUTION_ENV: zilliz-cluster
+          ZILLIZ_PUBLIC_ENDPOINT: ${{ secrets.ZILLIZ_PUBLIC_ENDPOINT }}
+          ZILLIZ_API_KEY: ${{ secrets.ZILLIZ_API_KEY }}
+          ZILLIZ_CLOUD_URI: ${{ secrets.ZILLIZ_CLOUD_URI }}
+          ZILLIZ_CLOUD_API_KEY: ${{ secrets.ZILLIZ_CLOUD_API_KEY }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          EMBEDDING_CACHE_NAMESPACE: ${{ inputs.component }}_zoomcamp
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          docker run --rm \
+            -e EXECUTION_ENV \
+            -e ZILLIZ_PUBLIC_ENDPOINT \
+            -e ZILLIZ_API_KEY \
+            -e ZILLIZ_CLOUD_URI \
+            -e ZILLIZ_CLOUD_API_KEY \
+            -e GH_TOKEN \
+            -e SLACK_BOT_TOKEN \
+            -e UPSTASH_REDIS_REST_URL \
+            -e UPSTASH_REDIS_REST_TOKEN \
+            -e EMBEDDING_CACHE_NAMESPACE \
+            -e OPENAI_API_KEY \
+            "${REGISTRY}/${IMAGE_PREFIX}${{ inputs.component }}:${IMAGE_TAG}"

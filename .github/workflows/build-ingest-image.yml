@@ -15,7 +15,7 @@ on:
 env:
   REGISTRY: docker.io
   REGISTRY_USER: ${{ secrets.DOCKER_USERNAME }}
-  REGISTRY_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+  REGISTRY_PASSWORD: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
 
 jobs:
   build-push:

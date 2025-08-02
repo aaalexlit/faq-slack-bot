@@ -1,0 +1,65 @@
+name: Build Ingestion Docker Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ingest/**/*.dockerfile'
+      - 'ingest/**/*.py'
+      - 'ingest/requirements.txt'
+
+  workflow_dispatch:
+
+
+env:
+  REGISTRY: docker.io
+  REGISTRY_USER: ${{ secrets.DOCKER_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.DOCKER_TOKEN }}
+
+jobs:
+  build-push:
+    name: Build → Push
+    runs-on: ubuntu-latest
+
+    # Build every image you have with a matrix
+    strategy:
+      matrix:
+        component:
+          - { name: ml,    dockerfile: ingest/ml.dockerfile,    image: aaalexlit/zoomcamp-faq-ingest-ml,    deployment: fill-index-zilliz-ml }
+          - { name: de,    dockerfile: ingest/de.dockerfile,    image: aaalexlit/zoomcamp-faq-ingest-de,    deployment: fill-index-zilliz-de }
+          - { name: mlops, dockerfile: ingest/mlops.dockerfile, image: aaalexlit/zoomcamp-faq-ingest-mlops, deployment: fill-index-zilliz-mlops }
+          - { name: llm,   dockerfile: ingest/llm.dockerfile,   image: aaalexlit/zoomcamp-faq-ingest-llm,   deployment: fill-index-zilliz-llm }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------- BUILD & PUSH IMAGE ------------------------------------
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Compute short git SHA
+        id: gitsha
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push ${{ matrix.component.name }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.component.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ matrix.component.image }}:${{ steps.gitsha.outputs.sha }}
+            ${{ env.REGISTRY }}/${{ matrix.component.image }}:latest   # optional

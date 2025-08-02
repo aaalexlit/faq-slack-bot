@@ -1,4 +1,3 @@
-import os
 from typing import Any, Optional
 
 from llama_index.core.readers.base import BasePydanticReader
@@ -51,7 +50,7 @@ class FAQGoogleDocsReader(BasePydanticReader):
     def class_name(cls) -> str:
         return 'CustomGoogleDocsReader'
 
-    def load_data(self, document_ids: [str]) -> [Document]:
+    def load_data(self, document_ids: list[str]) -> list[Document]:
         """Load data from the input directory.
 
         Args:
@@ -66,7 +65,7 @@ class FAQGoogleDocsReader(BasePydanticReader):
             results.extend(docs)
         return results
 
-    def _load_docs(self, document_id: str) -> [Document]:
+    def _load_docs(self, document_id: str) -> list[Document]:
         """Load a document from Google Docs.
 
         Args:
@@ -95,29 +94,9 @@ class FAQGoogleDocsReader(BasePydanticReader):
             Credentials, the obtained credential.
         """
         from google.auth.transport.requests import Request
-        from google.oauth2 import service_account
-        from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
+        import google.auth
 
-        creds = None
-        if os.path.exists(self.token_json_path):
-            creds = Credentials.from_authorized_user_file(self.token_json_path, SCOPES)
-        elif os.path.exists(self.service_account_json_path):
-            return service_account.Credentials.from_service_account_file(
-                self.service_account_json_path, scopes=SCOPES
-            )
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    self.credentials_json_path, SCOPES
-                )
-                creds = flow.run_local_server(port=8080)
-            # Save the credentials for the next run
-            with open(self.token_json_path, 'w') as token:
-                token.write(creds.to_json())
+        creds = google.auth.default(scopes=SCOPES)[0]
 
         return creds
 
@@ -136,11 +115,11 @@ class FAQGoogleDocsReader(BasePydanticReader):
         return ''.join(FAQGoogleDocsReader._read_paragraph_element(elem) for elem in elements)
 
     def _structural_elements_to_docs(self,
-                                     doc_elements: [Any],
-                                     doc_source: str) -> [Document]:
+                                     doc_elements: list[Any],
+                                     doc_source: str) -> list[Document]:
         """Recurse through a list of Structural Elements.
 
-        Read a document's text where text may be in nested elements.
+        Read a document's text where the text may be in nested elements.
 
         Args:
             doc_elements: a list of Structural Elements.

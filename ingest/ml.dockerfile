@@ -1,13 +1,19 @@
-FROM prefecthq/prefect:2-python3.10
+FROM python:3.10-slim
 
-RUN apt-get update && \
-    apt-get install -y gcc python3-dev
+# Install required build tools and clean up afterwards
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gcc python3-dev \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN pip install -U pip
+# Upgrade pip to the latest version
+RUN pip install --no-cache-dir -U pip
 
+# Set the working directory inside the container
 WORKDIR /usr/src
 
-COPY ingest/requirements.txt ./
+# Copy dependency list and install Python requirements
+COPY ingest/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENV EMBEDDING_CACHE_NAMESPACE=ml_zoomcamp
@@ -15,3 +21,6 @@ ENV EMBEDDING_CACHE_NAMESPACE=ml_zoomcamp
 COPY ingest/ml/ingest_ml.py ingest/ml/
 COPY ingest/readers ingest/readers
 COPY ingest/utils ingest/utils
+
+# Default command
+CMD ["python", "-m", "ingest.ml.ingest_ml"]

@@ -1,16 +1,15 @@
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from prefect import flow, task
-
-from ingest.utils.index_utils import index_spreadsheet, index_github_repo, \
+from ingest.utils.index_utils import index_github_repo, \
     index_slack_history, index_faq
 
 ML_CHANNEL_ID = 'C0288NJ5XSA'
 FAQ_COLLECTION_NAME = 'mlzoomcamp_faq_git'
 
 
-@task(name="Index course github repo")
 def index_course_github_repo():
+    print("Indexing course github repo")
     owner = 'DataTalksClub'
     repo = 'machine-learning-zoomcamp'
     branch = 'master'
@@ -20,8 +19,8 @@ def index_course_github_repo():
                       collection_name=FAQ_COLLECTION_NAME)
 
 
-@task(name="Index book github repo")
 def index_book_github_repo():
+    print("Indexing book github repo")
     owner = 'alexeygrigorev'
     repo = 'mlbookcamp-code'
     branch = 'master'
@@ -33,44 +32,34 @@ def index_book_github_repo():
                       collection_name=FAQ_COLLECTION_NAME)
 
 
-@task(name="Index FAQ Google Document")
 def index_google_doc():
+    print("Indexing FAQ Google Document")
     document_ids = ["1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8"]
     print('Loading google doc...')
     index_faq(document_ids, FAQ_COLLECTION_NAME)
 
 
-@task(name="Index course schedule")
-def index_course_schedule():
-    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
-           '-1vSkEwMv5OKwCdPfW6LgqQvKk48dZjPcFDrjDstBqZfq38UPadh0Nws1b57qOVYwzAjSufKnVf7umGWH/pubhtml')
-    title = 'ML Zoomcamp 2023 syllabus and deadlines'
-    index_spreadsheet(url, title, FAQ_COLLECTION_NAME)
-
-
-@task(name="Index project evaluation criteria")
-def index_evaluation_criteria():
-    url = ('https://docs.google.com/spreadsheets/d/e/2PACX'
-           '-1vQCwqAtkjl07MTW-SxWUK9GUvMQ3Pv_fF8UadcuIYLgHa0PlNu9BRWtfLgivI8xSCncQs82HDwGXSm3/pubhtml')
-    title = 'ML Zoomcamp project evaluation criteria : Project criteria'
-    index_spreadsheet(url, title, FAQ_COLLECTION_NAME)
-
-
-@task(name="Index slack messages")
 def index_slack_messages():
+    print("Indexing slack messages")
     channel_ids = [ML_CHANNEL_ID]
     index_slack_history(channel_ids, FAQ_COLLECTION_NAME)
 
 
-@flow(name="Update ML info Milvus index", log_prints=True)
 def fill_ml_index():
+    print("Updating ML info Milvus index")
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
+    # 1) do the Google doc indexing first
     index_google_doc()
-    index_slack_messages.submit(wait_for=[index_google_doc])
-    index_course_schedule.submit(wait_for=[index_google_doc])
-    index_evaluation_criteria.submit(wait_for=[index_google_doc])
-    index_course_github_repo.submit(wait_for=[index_google_doc])
-    index_book_github_repo.submit(wait_for=[index_google_doc])
+    # 2) now run the other two in parallel
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [
+            executor.submit(index_slack_messages),
+            executor.submit(index_course_github_repo),
+            executor.submit(index_book_github_repo),
+        ]
+        # optional: wait for both to finish (and raise if either errors)
+        for future in as_completed(futures):
+            future.result()
 
 
 if __name__ == '__main__':

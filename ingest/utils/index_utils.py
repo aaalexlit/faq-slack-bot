@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import tempfile
 from datetime import datetime, timedelta
 
@@ -15,8 +16,6 @@ from llama_index.core.storage import StorageContext
 from llama_index.readers.github import GithubRepositoryReader, GithubClient
 from llama_index.readers.web import TrafilaturaWebReader
 from llama_index.vector_stores.milvus import MilvusVectorStore
-from prefect.blocks.system import Secret
-from prefect_gcp import GcpCredentials
 from upstash_redis import Redis
 
 from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
@@ -37,8 +36,8 @@ print(f'embedding dimension = {embedding_dimension}')
 
 
 def load_embeddings() -> CacheBackedEmbeddings:
-    redis_client = Redis(url=Secret.load('upstash-redis-rest-url').get(),
-                         token=Secret.load('upstash-redis-rest-token').get())
+    redis_client = Redis(url=os.getenv('UPSTASH_REDIS_REST_URL'),
+                         token=os.getenv('UPSTASH_REDIS_REST_TOKEN'))
     embeddings_cache = UpstashRedisByteStore(client=redis_client,
                                              ttl=None,
                                              namespace=os.getenv('EMBEDDING_CACHE_NAMESPACE'))
@@ -64,7 +63,7 @@ def index_spreadsheet(url: str, title: str, collection_name: str):
     add_to_index(documents, collection_name=collection_name)
 
 
-def add_route_to_docs(docs: [Document], route_name: str):
+def add_route_to_docs(docs: list[Document], route_name: str):
     route_key_name = 'route'
     for doc in docs:
         doc.metadata[route_key_name] = route_name
@@ -86,15 +85,15 @@ def add_to_index(documents: list[Document],
                                                 overwrite=overwrite)
     elif environment == 'zilliz-cluster':
         milvus_vector_store = MilvusVectorStore(
-            uri=Secret.load('zilliz-public-endpoint').get(),
-            token=Secret.load('zilliz-api-key').get(),
+            uri=os.getenv('ZILLIZ_PUBLIC_ENDPOINT'),
+            token=os.getenv('ZILLIZ_API_KEY'),
             collection_name=collection_name,
             dim=embedding_dimension,
             overwrite=overwrite)
     else:
         milvus_vector_store = MilvusVectorStore(collection_name=collection_name,
-                                                uri=Secret.load('zilliz-cloud-uri').get(),
-                                                token=Secret.load('zilliz-cloud-api-key').get(),
+                                                uri=os.getenv("ZILLIZ_CLOUD_URI"),
+                                                token=os.getenv("ZILLIZ_CLOUD_API_KEY"),
                                                 dim=embedding_dimension,
                                                 overwrite=overwrite)
     storage_context = StorageContext.from_defaults(vector_store=milvus_vector_store)
@@ -110,14 +109,14 @@ def index_github_repo(owner: str,
                       repo: str,
                       branch: str,
                       collection_name: str,
-                      ignore_file_extensions: [str] = None,
-                      ignore_directories: [str] = None,
+                      ignore_file_extensions: list[str] = None,
+                      ignore_directories: list[str] = None,
                       ):
     if ignore_file_extensions is None:
-        ignore_file_extensions = ['.jpg', '.png', '.svg', '.gitignore', '.csv', '.jar']
+        ignore_file_extensions = ['.jpg', '.png', '.svg', '.gitignore', '.csv', '.jar', '.json', '.lock']
     if ignore_directories is None:
         ignore_directories = ['.github', '.gitignore', '2021', '2022', 'images']
-    github_client = GithubClient(Secret.load('github-token').get(), verbose=True)
+    github_client = GithubClient(os.getenv('GH_TOKEN'), verbose=True)
     documents = GithubRepositoryReader(
         github_client=github_client,
         owner=owner,
@@ -140,6 +139,26 @@ def index_github_repo(owner: str,
     add_to_index(ipynb_docs, collection_name=collection_name)
 
 
+def remove_base64_images(markdown_text: str) -> str:
+    """
+    Remove all Markdown images that embed base64-encoded data URIs.
+
+    Args:
+        markdown_text: A string containing Markdown (e.g., exported from a Jupyter notebook).
+
+    Returns:
+        The same string, but with any occurrences of:
+            ![alt-text](data:image/…;base64,ENCODEDDATA)
+        removed entirely.
+    """
+    # This regex matches:
+    #  - '![' followed by any number of non-']' characters ']'  → the alt text
+    #  - '(' then optional whitespace, then 'data:image/' and any chars up to a ';base64,'
+    #  - then all characters up to the next ')'      → the base64 blob
+    pattern = re.compile(r'!\[[^]]*]\(\s*data:image/[^)]+;base64,[^)]+\)', re.IGNORECASE)
+    return pattern.sub('', markdown_text)
+
+
 def parse_ipynb_doc(ipynb_doc: Document) -> Document:
     ipynb_json = json.loads(ipynb_doc.text)
     temp_ipynb = tempfile.NamedTemporaryFile(suffix='.ipynb')
@@ -150,18 +169,18 @@ def parse_ipynb_doc(ipynb_doc: Document) -> Document:
         all_cells = parsed.get_all_cells()
         parsed_text = ''.join([JupyterNotebookParser._join_source_lines(cell.get('source', ''))
                                for cell in all_cells])
-        ipynb_doc.text = parsed_text
+        ipynb_doc.text = remove_base64_images(parsed_text)
         return ipynb_doc
     finally:
         temp_ipynb.close()
 
 
-def index_slack_history(channel_ids: [str], collection_name: str):
+def index_slack_history(channel_ids: list[str], collection_name: str):
     earliest_date = datetime.now() - timedelta(days=90)
     slack_reader = SlackReader(earliest_date=earliest_date,
                                bot_user_id=BOT_USER_ID,
                                not_ignore_users=[AU_TOMATOR_USER_ID],
-                               slack_token=Secret.load('slack-bot-token').get())
+                               slack_token=os.getenv("SLACK_BOT_TOKEN"))
     print('Starting to load slack messages from the last 90 days')
     documents = slack_reader.load_data(channel_ids=channel_ids)
     add_route_to_docs(documents, 'slack')
@@ -169,15 +188,10 @@ def index_slack_history(channel_ids: [str], collection_name: str):
     add_to_index(documents, collection_name=collection_name)
 
 
-def index_faq(document_ids: [str], collection_name: str):
-    temp_creds = tempfile.NamedTemporaryFile()
-    creds_dict = GcpCredentials.load("google-drive-creds").service_account_info.get_secret_value()
-    with open(temp_creds.name, 'w') as f_out:
-        json.dump(creds_dict, f_out)
-    gdocs_reader = FAQGoogleDocsReader(service_account_json_path=temp_creds.name)
+def index_faq(document_ids: list[str], collection_name: str):
+    gdocs_reader = FAQGoogleDocsReader()
     print('Starting to load FAQ document')
     documents = gdocs_reader.load_data(document_ids=document_ids)
-    temp_creds.close()
     add_route_to_docs(documents, 'faq')
     print('Starting to add loaded FAQ document to the index')
     add_to_index(documents,

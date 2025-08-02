@@ -6,13 +6,10 @@ import time
 from pathlib import Path
 
 import pinecone  # type: ignore
-from langchain_community.document_loaders import GoogleDriveLoader, GitLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Pinecone
-from prefect import flow, task
-from prefect.blocks.system import Secret
-from prefect_gcp import GcpCredentials
+from langchain_community.document_loaders import GoogleDriveLoader, GitLoader
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 embeddings = HuggingFaceEmbeddings(model_name='BAAI/bge-base-en-v1.5')
@@ -20,19 +17,16 @@ embedding_dimension = len(embeddings.embed_query("test"))
 print(f'embedding dimension = {embedding_dimension}')
 
 
-@task(name="Index FAQ Google Document")
 def ingest_google_doc(index_name: str,
                       document_ids: list[str],
                       ):
     print('Loading google doc...')
     temp_creds = tempfile.NamedTemporaryFile()
-    creds_dict = GcpCredentials.load("google-drive-creds").service_account_info.get_secret_value()
+    creds_dict = os.getenv('GOOGLE_SERVICE_ACC_KEY')
     with open(temp_creds.name, 'w') as f_out:
         json.dump(creds_dict, f_out)
     loader = GoogleDriveLoader(service_account_key=Path(temp_creds.name),
                                document_ids=document_ids)
-    # loader = GoogleDriveLoader(service_account_key=Path.cwd() / "keys" / "service_account_key.json",
-    #                            document_ids=document_ids)
 
     raw_docs = loader.load()
     temp_creds.close()
@@ -50,7 +44,6 @@ def index_docs(docs, index_name):
     print_index_status(index_name)
 
 
-@task(name="Delete and Create Pinecone index")
 def create_pinecone_index(index_name: str):
     if index_name in pinecone.list_indexes():
         print(f"Index {index_name} exists. Deleting...")
@@ -72,7 +65,6 @@ def print_index_status(index_name):
     print(f"index stats: {index_stats}")
 
 
-@task(name="Index git repo")
 def ingest_git_repo(repo_url: str, index_name: str):
     local_dir_path = f"./git/{repo_url[repo_url.rindex('/') + 1:]}"
     if Path(local_dir_path).exists():
@@ -100,14 +92,13 @@ def get_text_splitter():
     )
 
 
-@flow(name="Update the index in Pinecone for MLOps Zoomcamp", log_prints=True)
 def create_and_fill_the_index(index_name: str,
                               google_doc_ids: list[str],
                               repo_url: str,
                               overwrite: bool):
     pinecone.init(
-        api_key=Secret.load('pinecone-api-key').get(),
-        environment=Secret.load('pinecone-env').get()
+        api_key=os.getenv('PINECONE_API_KEY'),
+        environment=os.getenv('PINECONE_ENV')
     )
     if overwrite:
         create_pinecone_index(index_name=index_name)

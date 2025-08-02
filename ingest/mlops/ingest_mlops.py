@@ -1,6 +1,6 @@
 import os
 
-from prefect import flow, task
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ingest.utils.index_utils import index_github_repo, \
     index_slack_history, index_faq
@@ -9,8 +9,8 @@ SLACK_CHANNEL_ID = 'C02R98X7DS9'
 COLLECTION_NAME = 'mlopszoomcamp'
 
 
-@task(name="Index course github repo")
 def index_course_github_repo():
+    print("Indexing course github repo")
     owner = 'DataTalksClub'
     repo = 'mlops-zoomcamp'
     branch = 'main'
@@ -18,29 +18,36 @@ def index_course_github_repo():
                       repo=repo,
                       branch=branch,
                       collection_name=COLLECTION_NAME,
-                      ignore_directories=['.github', '.gitignore', 'cohorts/2022', 'cohorts/2023', 'images'],
+                      ignore_directories=['.github', '.gitignore', 'cohorts/2022', 'cohorts/2023', 'cohorts/2024',
+                                          'images'],
                       )
 
 
-@task(name="Index FAQ Google Document")
 def index_google_doc():
+    print("Indexing FAQ Google Document")
     document_ids = ["12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0"]
     print('Loading google doc...')
     index_faq(document_ids, COLLECTION_NAME)
 
 
-@task(name="Index slack messages")
 def index_slack_messages():
+    print("Indexing slack messages")
     channel_ids = [SLACK_CHANNEL_ID]
     index_slack_history(channel_ids, COLLECTION_NAME)
 
 
-@flow(name="Update MLOps info Milvus index", log_prints=True)
 def fill_mlops_index():
+    print("Updating MLOps info Milvus index")
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
     index_google_doc()
-    index_slack_messages.submit(wait_for=[index_google_doc])
-    index_course_github_repo.submit(wait_for=[index_google_doc])
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [
+            executor.submit(index_slack_messages),
+            executor.submit(index_course_github_repo),
+        ]
+        # optional: wait for both to finish (and raise if either errors)
+        for future in as_completed(futures):
+            future.result()
 
 
 if __name__ == '__main__':

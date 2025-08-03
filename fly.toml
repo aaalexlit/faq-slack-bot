@@ -4,5 +4,3 @@ primary_region = "mad"
 [build]
   image = "aaalexlit/faq-slack-bot:main"
 
-[env]
-  PINECONE_ENV = "gcp-starter"

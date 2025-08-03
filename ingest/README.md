@@ -1,37 +1,25 @@
-# Execute indexing
-## For ML Zoomcamp
-At the moment the indexing is scheduled to execute with [Prefect Cloud](https://app.prefect.cloud/)
-via deployments every 24 hours at 23 CET
+# Indexing Execution
 
-Steps to change/run the deployment are described in [prefect.md](prefect.md)
+## GitHub Actions (Production)
 
-## For MLOps Zoomcamp
+The ingestion workflow is orchestrated by three main GitHub Actions:
 
-Execute [ingest.py](mlops/ingest_mlops_old.py)
-```shell
-python ingest_mlops_old.py
-```
+1. **Build & Push Image**  
+   Builds the ingestion Docker image and pushes it to Docker Hub.  
+   [Workflow file](../.github/workflows/build-ingest-image.yml)
 
-# Setup Prefect
+1. **Parameterized Ingestion Run**  
+   Triggers an ingestion job with runtime-supplied parameters.  
+   [Workflow file](../.github/workflows/run-ingest.yml)
 
-To run any ingestion, Prefect needs to be set up, 
-as the code relies on secrets stored in Prefect blocks.
+1. **Course-Specific Scheduled Runs**  
+   Individually scheduled runs for each ZoomCamp deployment:  
+   • [LLM](../.github/workflows/schedule-ingest-llm.yml)  
+   • [DE](../.github/workflows/schedule-ingest-de.yml)  
+   • [ML Ops](../.github/workflows/schedule-ingest-mlops.yml)  
+   • [ML](../.github/workflows/schedule-ingest-ml.yml)
 
-## Create a new profile to use with the cloud and use it (Optional)
+## Local Execution
 
-```bash
-prefect profile create cloud
-prefect profile use cloud
-```
-
-## Log in to prefect cloud either though browser or using the API key
-```bash
-prefect cloud login
-```
-
-Create the required prefect blocks. Make sure to set up corresponding environment
-variables.
-
-```shell
-python ingest/prefect_infra/create_secrets_blocks.py
-```
+Instructions for running the ingestion pipeline locally are provided in  
+[local_development.md](local_development.md).

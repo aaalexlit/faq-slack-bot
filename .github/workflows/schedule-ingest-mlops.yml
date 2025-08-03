@@ -1,0 +1,14 @@
+name: Schedule MLOps Ingestion
+
+on:
+  schedule:
+    # Run every Wednesday at 23:00 UTC
+    - cron: '0 23 * * 3'
+  workflow_dispatch:
+
+jobs:
+  run-ingest:
+    uses: ./.github/workflows/run-ingest.yml
+    with:
+      component: mlops
+    secrets: inherit

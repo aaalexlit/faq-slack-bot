@@ -1,0 +1,14 @@
+name: Schedule ML Ingestion
+
+on:
+  schedule:
+    # Run every Tuesday at 23:00 UTC
+    - cron: '0 23 * * 2'
+  workflow_dispatch:
+
+jobs:
+  run-ingest:
+    uses: ./.github/workflows/run-ingest.yml
+    with:
+      component: ml
+    secrets: inherit

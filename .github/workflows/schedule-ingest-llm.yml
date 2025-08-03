@@ -1,0 +1,14 @@
+name: Schedule LLM Ingestion
+
+on:
+  schedule:
+    # Run at 00:00 every day
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-ingest:
+    uses: ./.github/workflows/run-ingest.yml
+    with:
+      component: llm
+    secrets: inherit

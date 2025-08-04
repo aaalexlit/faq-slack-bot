@@ -31,13 +31,13 @@ class YoutubeReader(BasePydanticReader):
             current_start = None
             current_text = ""
             current_token_count = 0
-            transcript_array = YouTubeTranscriptApi.get_transcript(video_id)
+            transcript_array = YouTubeTranscriptApi().fetch(video_id)
 
-            for segment in transcript_array:
-                # Get the token count of the current segment text
-                token_count = len(tokenizer(segment["text"], truncation=False, add_special_tokens=False)['input_ids'])
+            for snippet in transcript_array:
+                # Get the token count of the current snippet text
+                token_count = len(tokenizer(snippet.text, truncation=False, add_special_tokens=False)['input_ids'])
 
-                # If adding this segment exceeds 512 tokens, finalize the current document
+                # If adding this snippet exceeds 512 tokens, finalize the current document
                 if current_token_count + token_count > 512:
                     documents.append(Document(
                         text=current_text.strip(),
@@ -47,14 +47,14 @@ class YoutubeReader(BasePydanticReader):
                     ))
 
                     # Start a new chunk
-                    current_start = segment["start"]
-                    current_text = segment["text"]
+                    current_start = snippet.start
+                    current_text = snippet.text
                     current_token_count = token_count
                 else:
                     # Concatenate to the current chunk
                     if not current_text:
-                        current_start = segment["start"]
-                    current_text += " " + segment["text"]
+                        current_start = snippet.start
+                    current_text += " " + snippet.text
                     current_token_count += token_count
 
             # Append the last chunk if it exists

@@ -1,4 +1,4 @@
-name: Schedule LLM Ingestion
+name: Scheduled LLM Ingestion
 
 on:
   schedule:

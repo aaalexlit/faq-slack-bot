@@ -7,7 +7,7 @@ on:
         description: "Component to run (ml, de, mlops, llm)"
         required: true
         type: choice
-        options: [ml, de, mlops, llm]
+        options: [ ml, de, mlops, llm ]
       image_tag:
         description: "Docker image tag (defaults to 'latest')"
         default: latest
@@ -33,10 +33,6 @@ jobs:
   ingest:
     name: Execute ${{ inputs.component }} ingestion
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
       - name: Checkout code

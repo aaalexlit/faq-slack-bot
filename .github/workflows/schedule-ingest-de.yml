@@ -1,4 +1,4 @@
-name: Schedule DE Ingestion
+name: Scheduled DE Ingestion
 
 on:
   schedule:

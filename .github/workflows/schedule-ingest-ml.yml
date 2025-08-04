@@ -1,4 +1,4 @@
-name: Schedule ML Ingestion
+name: Scheduled ML Ingestion
 
 on:
   schedule:

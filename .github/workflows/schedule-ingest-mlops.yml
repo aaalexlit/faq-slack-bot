@@ -1,4 +1,4 @@
-name: Schedule MLOps Ingestion
+name: Scheduled MLOps Ingestion
 
 on:
   schedule:

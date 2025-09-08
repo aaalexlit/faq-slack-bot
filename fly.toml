@@ -1,5 +1,5 @@
 app = "faq-slack-bot"
-primary_region = "mad"
+primary_region = "fra"
 
 [build]
   image = "aaalexlit/faq-slack-bot:main"

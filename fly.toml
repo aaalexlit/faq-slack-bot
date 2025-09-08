@@ -4,3 +4,6 @@ primary_region = "fra"
 [build]
   image = "aaalexlit/faq-slack-bot:main"
 
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = 2048

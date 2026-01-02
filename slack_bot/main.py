@@ -485,21 +485,21 @@ if __name__ == "__main__":
 
     ml_query_engine = get_retriever_query_engine(collection_name=ML_COLLECTION_NAME,
                                                  zoomcamp_name='Machine Learning',
-                                                 cohort_year=2024,
-                                                 course_start_date='16 September 2024')
+                                                 cohort_year=2025,
+                                                 course_start_date='15 September 2025')
 
     de_query_engine = get_retriever_query_engine(collection_name=DE_COLLECTION_NAME,
                                                  zoomcamp_name='Data Engineering',
-                                                 cohort_year=2025,
-                                                 course_start_date='13 January 2025')
+                                                 cohort_year=2026,
+                                                 course_start_date='12 January 2026')
 
     mlops_query_engine = get_retriever_query_engine(collection_name=MLOPS_COLLECTION_NAME,
                                                     zoomcamp_name='MLOps',
-                                                    cohort_year=2024,
-                                                    course_start_date='13 May 2024')
+                                                    cohort_year=2025,
+                                                    course_start_date='5 May 2025')
 
     llm_query_engine = get_retriever_query_engine(collection_name=LLM_COLLECTION_NAME,
                                                   zoomcamp_name='LLM',
-                                                  cohort_year=2024,
-                                                  course_start_date='17 June 2024')
+                                                  cohort_year=2025,
+                                                  course_start_date='2 June 2025')
     SocketModeHandler(app, SLACK_APP_TOKEN).start()

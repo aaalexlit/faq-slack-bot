@@ -56,22 +56,21 @@ The system consists of two main components:
    ```
 
 2. **Configure environment variables:**
-   - Rename `dev.env` to `.env`
+   - In the `slack_bot/` directory, rename `dev.env` to `.env`
    - Fill in all required values (see [Environment Variables](#environment-variables))
 
-3. **Start local Milvus instance:**
+3. **Start local Milvus instance** (in a separate terminal):
    ```bash
    cd ingest/local_milvus
    docker compose up
    ```
 
-4. **Run ingestion to populate the index**
+4. **Run ingestion to populate the index** (in another terminal)
 
-   **Important:** Before running the bot, you must populate the vector store with course data. See the [Running Ingestion Locally](#2-running-ingestion-locally) section below.
+   **Important:** Before running the bot, you must populate the vector store with course data. See the [Running Ingestion Locally](#2-running-ingestion-locally) section below for detailed instructions.
 
-5. **Start the bot:**
+5. **Start the bot** (in the original terminal or a new one):
    ```bash
-   # Return to slack_bot directory if coming from ingest
    cd slack_bot
    source .env
    python main.py
@@ -81,19 +80,19 @@ For more details, see [`slack_bot/README.md`](slack_bot/README.md).
 
 #### 2. Running Ingestion Locally
 
-1. **Start local Milvus:**
+1. **Start local Milvus** (in a separate terminal):
    ```bash
    cd ingest/local_milvus
    docker compose up
    ```
 
 2. **Configure environment variables:**
-   - Rename `dev.env` to `.env`
+   - In the `ingest/` directory, rename `dev.env` to `.env`
    - Fill in all required values
 
-3. **Run ingestion for specific courses:**
+3. **Run ingestion for specific courses** (in another terminal, from the project root):
    ```bash
-   source .env
+   source ingest/.env
    export PYTHONPATH="${PYTHONPATH}:$(pwd)"
    python ingest/ml/ingest_ml.py      # for ML Zoomcamp
    python ingest/de/ingest_de.py      # for DE Zoomcamp

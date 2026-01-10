@@ -440,9 +440,16 @@ def get_retriever_query_engine(collection_name: str,
                                              overwrite=False)
     vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
                                                             embed_model=embeddings)
-    cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=4)
     recency_postprocessor = get_time_weighted_postprocessor()
-    node_postprocessors = [recency_postprocessor, cohere_rerank]
+
+    # Validate COHERE_API_KEY and configure postprocessors
+    cohere_api_key = os.getenv('COHERE_API_KEY')
+    if not cohere_api_key:
+        logger.warning("COHERE_API_KEY not set, skipping Cohere re-ranking")
+        node_postprocessors = [recency_postprocessor]
+    else:
+        cohere_rerank = CohereRerank(api_key=cohere_api_key, top_n=4)
+        node_postprocessors = [recency_postprocessor, cohere_rerank]
     qa_prompt_template = get_prompt_template(zoomcamp_name=zoomcamp_name,
                                              cohort_year=cohort_year,
                                              course_start_date=course_start_date)

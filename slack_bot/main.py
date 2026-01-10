@@ -16,7 +16,7 @@ from llama_index.core import get_response_synthesizer
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.postprocessor import TimeWeightedPostprocessor
 from llama_index.core.query_engine import RetrieverQueryEngine
-# from llama_index.postprocessor.cohere_rerank import CohereRerank
+from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.vector_stores.milvus import MilvusVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from requests.exceptions import ChunkedEncodingError
@@ -440,10 +440,9 @@ def get_retriever_query_engine(collection_name: str,
                                              overwrite=False)
     vector_store_index = VectorStoreIndex.from_vector_store(vector_store,
                                                             embed_model=embeddings)
-    # cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=4)
+    cohere_rerank = CohereRerank(api_key=os.getenv('COHERE_API_KEY'), top_n=4)
     recency_postprocessor = get_time_weighted_postprocessor()
-    # node_postprocessors = [recency_postprocessor, cohere_rerank]
-    node_postprocessors = [recency_postprocessor]
+    node_postprocessors = [recency_postprocessor, cohere_rerank]
     qa_prompt_template = get_prompt_template(zoomcamp_name=zoomcamp_name,
                                              cohort_year=cohort_year,
                                              course_start_date=course_start_date)
@@ -453,7 +452,7 @@ def get_retriever_query_engine(collection_name: str,
     response_synthesizer = get_response_synthesizer(text_qa_template=qa_prompt_template,
                                                     verbose=True,
                                                     )
-    return RetrieverQueryEngine(vector_store_index.as_retriever(similarity_top_k=15),
+    return RetrieverQueryEngine(vector_store_index.as_retriever(similarity_top_k=20),
                                 node_postprocessors=node_postprocessors,
                                 response_synthesizer=response_synthesizer,
                                 )

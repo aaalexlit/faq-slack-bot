@@ -24,7 +24,8 @@ The system consists of two main components:
 - Uses LlamaIndex with Milvus/Zilliz vector store and HuggingFace embeddings (`BAAI/bge-base-en-v1.5`)
 - Uses OpenAI GPT-4o-mini (`gpt-4o-mini-2024-07-18`) for response generation
 - Implements feedback collection (upvote/downvote) tracked via LangSmith
-- Applies `TimeWeightedPostprocessor` to prioritize recent content (90-day window for Slack messages)
+- Applies `TimeWeightedPostprocessor` first to prioritize recent Slack messages (20 retrieved → 10 after time-weighting)
+- Applies `CohereRerank` postprocessor second to improve result relevance (10 → 4 final results)
 
 ### 2. Ingestion Pipeline (`ingest/`)
 - **Entry points**: Course-specific scripts in `ingest/{ml,de,mlops,llm}/ingest_*.py`
@@ -130,6 +131,28 @@ Different collections use different Zilliz clusters:
 
 This is handled in both `slack_bot/main.py:422-440` and `ingest/utils/index_utils.py:81-98`.
 
+### Result Re-ranking and Post-processing
+The bot uses a two-stage sequential post-processing pipeline to improve result quality:
+
+1. **Time-Weighted Post-processing** (`slack_bot/main.py:444-445`, `slack_bot/main.py:461-467`):
+   - Applied **first** to prioritize recent content before re-ranking
+   - Initial retrieval fetches top 20 results from vector similarity search (`similarity_top_k=20`)
+   - Uses `thread_ts` metadata field to track Slack message timestamps
+   - Decay factor of 0.4 balances relevance vs recency
+   - Reduces 20 results to top 10 (`top_k=10`)
+   - **Rationale for ordering**: This postprocessor only affects Slack messages (which have `thread_ts` metadata). By applying it first, we ensure recent Slack conversations are prioritized before semantic re-ranking, since time relevance is crucial for student questions about course logistics and current assignments.
+
+2. **Cohere Re-ranking** (`slack_bot/main.py:443`):
+   - Applied **second** after time-weighting to perform semantic re-ranking
+   - Takes the 10 time-weighted results and re-scores them based on semantic relevance to the query
+   - Returns top 4 most semantically relevant results (`top_n=4`)
+   - Requires `COHERE_API_KEY` environment variable
+   - Handles `CohereAPIError` exceptions gracefully (see `slack_bot/main.py:264`)
+
+**Pipeline flow**: 20 retrieved → 10 after time-weighting → 4 after Cohere re-ranking
+
+See `get_retriever_query_engine()` in `slack_bot/main.py:418-458` for complete pipeline implementation.
+
 ### Metadata and Source Attribution
 Source nodes include metadata for generating reference links:
 - **Slack**: `channel`, `thread_ts` → formatted as `https://datatalks-club.slack.com/archives/{channel}/p{thread_ts}`
@@ -151,6 +174,7 @@ File extensions ignored: `.jpg`, `.png`, `.svg`, `.gitignore`, `.csv`, `.jar`, `
 Required for Slack bot:
 - `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`
 - `OPENAI_API_KEY`
+- `COHERE_API_KEY` (for result re-ranking)
 - `ZILLIZ_CLOUD_URI`, `ZILLIZ_CLOUD_API_KEY` (for ML/DE)
 - `ZILLIZ_PUBLIC_ENDPOINT`, `ZILLIZ_API_KEY` (for MLOps/LLM)
 - `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT` (for LangSmith logging)

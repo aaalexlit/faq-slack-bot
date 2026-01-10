@@ -8,6 +8,7 @@ The bot automatically responds to questions in Slack channels dedicated to DataT
 
 - **Searching indexed course materials** including FAQ documents, Slack history, GitHub repositories, and YouTube subtitles
 - **Using vector similarity search** to find the most relevant content for each question
+- **Re-ranking results** with Cohere's re-ranking model to improve relevance
 - **Generating contextual answers** using GPT-4o-mini based on retrieved course materials
 - **Providing source references** with links back to original materials (Slack messages, docs, GitHub files, videos)
 - **Learning from feedback** through upvote/downvote reactions tracked via LangSmith
@@ -25,7 +26,8 @@ The system consists of two main components:
 - Runs as a Slack app using Socket Mode with the Slack Bolt framework
 - Maintains 4 separate query engines (ML, DE, MLOps, LLM Zoomcamps)
 - Uses LlamaIndex with Milvus/Zilliz vector store and HuggingFace embeddings
-- Implements time-weighted post-processing to prioritize recent Slack messages
+- Implements time-weighted post-processing to prioritize recent Slack messages (applied first)
+- Implements Cohere re-ranking to improve result relevance (20 retrieved → 10 after time-weighting → 4 after re-ranking)
 
 ### 2. Ingestion Pipeline (`ingest/`)
 - Indexes data from multiple sources: Google Docs (FAQs), Slack history, GitHub repos, YouTube subtitles
@@ -110,6 +112,7 @@ For more details, see [`ingest/local_development.md`](ingest/local_development.m
 - `SLACK_BOT_TOKEN` - Bot token for Slack app
 - `SLACK_APP_TOKEN` - App-level token for Socket Mode
 - `OPENAI_API_KEY` - OpenAI API key for GPT-4o-mini
+- `COHERE_API_KEY` - Cohere API key for result re-ranking
 - `ZILLIZ_CLOUD_URI`, `ZILLIZ_CLOUD_API_KEY` - For ML/DE Zoomcamps
 - `ZILLIZ_PUBLIC_ENDPOINT`, `ZILLIZ_API_KEY` - For MLOps/LLM Zoomcamps
 - `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT` - For LangSmith logging
@@ -143,6 +146,7 @@ For more details, see [`ingest/local_development.md`](ingest/local_development.m
 - **LLM Framework**: LlamaIndex
 - **Vector Database**: Milvus (local), Zilliz Cloud (production)
 - **Embeddings**: HuggingFace BAAI/bge-base-en-v1.5
+- **Re-ranking**: Cohere Rerank API
 - **LLM**: OpenAI GPT-4o-mini
 - **Slack Integration**: Slack Bolt (Socket Mode)
 - **Observability**: LangSmith

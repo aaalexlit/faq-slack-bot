@@ -2,7 +2,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ingest.utils.index_utils import index_spreadsheet, index_github_repo, \
-    index_slack_history, index_faq, index_youtube
+    index_slack_history, index_faq_github, index_youtube
 
 DE_CHANNEL_ID = 'C01FABYF2RG'
 FAQ_COLLECTION_NAME = 'dezoomcamp_faq_git'
@@ -21,11 +21,9 @@ def index_course_github_repo():
                       )
 
 
-def index_google_doc():
-    print("Indexing FAQ Google Document")
-    document_ids = ["19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw"]
-    print('Loading google doc...')
-    index_faq(document_ids, FAQ_COLLECTION_NAME)
+def index_faq_docs():
+    print("Indexing FAQ from GitHub")
+    index_faq_github(FAQ_COLLECTION_NAME)
 
 
 def index_slack_messages():
@@ -43,7 +41,7 @@ def index_yt_subtitles():
 def fill_de_index():
     print("Updating DE info Milvus index")
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
-    index_google_doc()  # step 1
+    index_faq_docs()  # step 1 - index FAQ from GitHub
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [

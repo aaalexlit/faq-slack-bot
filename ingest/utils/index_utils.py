@@ -19,6 +19,7 @@ from llama_index.vector_stores.milvus import MilvusVectorStore
 from upstash_redis import Redis
 
 from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
+from ingest.readers.github_faq_reader import GithubRepositoryDataReader, parse_data
 from ingest.readers.slack_reader import SlackReader
 from ingest.readers.youtube_reader import YoutubeReader
 
@@ -195,6 +196,35 @@ def index_faq(document_ids: list[str], collection_name: str):
     add_route_to_docs(documents, 'faq')
     print('Starting to add loaded FAQ document to the index')
     add_to_index(documents,
+                 collection_name=collection_name,
+                 overwrite=True,
+                 )
+
+
+def index_faq_github(collection_name: str):
+    """
+    Index FAQ documents from the DataTalksClub/faq GitHub repository.
+
+    Args:
+        collection_name: Name of the Milvus collection to store the FAQs
+    """
+    reader = GithubRepositoryDataReader(
+        repo_owner="DataTalksClub",
+        repo_name="faq",
+        allowed_extensions={"md"},
+        filename_filter=lambda fp: "_questions" in fp.lower()
+    )
+
+    print('Starting to load FAQ documents from GitHub')
+    faq_raw = reader.read()
+    print(f"Loaded {len(faq_raw)} raw FAQ files from GitHub")
+
+    faq_documents = parse_data(faq_raw)
+    print(f"Parsed into {len(faq_documents)} FAQ entries")
+
+    add_route_to_docs(faq_documents, 'faq')
+    print('Starting to add loaded FAQ documents to the index')
+    add_to_index(faq_documents,
                  collection_name=collection_name,
                  overwrite=True,
                  )

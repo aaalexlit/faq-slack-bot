@@ -19,6 +19,7 @@ from llama_index.vector_stores.milvus import MilvusVectorStore
 from upstash_redis import Redis
 
 from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
+from ingest.readers.github_faq_reader import GithubRepositoryDataReader, parse_data
 from ingest.readers.slack_reader import SlackReader
 from ingest.readers.youtube_reader import YoutubeReader
 
@@ -205,3 +206,35 @@ def index_youtube(video_ids: list[str], collection_name: str):
     documents = yt_reader.load_data(video_ids=video_ids, tokenizer=embeddings.client.tokenizer)
     print('Starting to add loaded Video transcripts to the index')
     add_to_index(documents, collection_name=collection_name)
+
+
+def index_faq_github(course_folder: str, collection_name: str):
+    """
+    Index FAQ documents from GitHub repository.
+
+    Args:
+        course_folder: Folder name in _questions directory (e.g., 'machine-learning-zoomcamp')
+        collection_name: Name of the Milvus collection to index into
+    """
+    print(f"Indexing FAQ from GitHub (folder: {course_folder})")
+
+    reader = GithubRepositoryDataReader(
+        repo_owner="DataTalksClub",
+        repo_name="faq",
+        allowed_extensions={"md"},
+        filename_filter=lambda fp: "_questions" in fp.lower(),
+        folder_filter=f"_questions/{course_folder}",
+    )
+
+    print('Starting to load FAQ documents from GitHub...')
+    faq_raw = reader.read()
+    faq_documents = parse_data(faq_raw)
+    print(f"Loaded {len(faq_documents)} FAQ entries")
+
+    add_route_to_docs(faq_documents, 'faq')
+    print('Starting to add loaded FAQ documents to the index')
+    add_to_index(
+        faq_documents,
+        collection_name=collection_name,
+        overwrite=True,
+    )

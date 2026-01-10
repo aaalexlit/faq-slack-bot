@@ -3,7 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ingest.utils.index_utils import index_github_repo, \
-    index_slack_history, index_faq
+    index_slack_history, index_faq, index_faq_github
 
 SLACK_CHANNEL_ID = 'C02R98X7DS9'
 COLLECTION_NAME = 'mlopszoomcamp'
@@ -23,11 +23,9 @@ def index_course_github_repo():
                       )
 
 
-def index_google_doc():
-    print("Indexing FAQ Google Document")
-    document_ids = ["12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0"]
-    print('Loading google doc...')
-    index_faq(document_ids, COLLECTION_NAME)
+def index_faq_documents():
+    print("Indexing FAQ from GitHub")
+    index_faq_github('mlops-zoomcamp', COLLECTION_NAME)
 
 
 def index_slack_messages():
@@ -39,7 +37,7 @@ def index_slack_messages():
 def fill_mlops_index():
     print("Updating MLOps info Milvus index")
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
-    index_google_doc()
+    index_faq_documents()
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [
             executor.submit(index_slack_messages),

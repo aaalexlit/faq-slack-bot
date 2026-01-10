@@ -65,10 +65,13 @@ The system consists of two main components:
    docker compose up
    ```
 
-4. **Run ingestion to populate the index** (see [Running Ingestion Locally](#2-running-ingestion-locally))
+4. **Run ingestion to populate the index**
+
+   **Important:** Before running the bot, you must populate the vector store with course data. See the [Running Ingestion Locally](#2-running-ingestion-locally) section below.
 
 5. **Start the bot:**
    ```bash
+   # Return to slack_bot directory if coming from ingest
    cd slack_bot
    source .env
    python main.py
@@ -90,6 +93,7 @@ For more details, see [`slack_bot/README.md`](slack_bot/README.md).
 
 3. **Run ingestion for specific courses:**
    ```bash
+   source .env
    export PYTHONPATH="${PYTHONPATH}:$(pwd)"
    python ingest/ml/ingest_ml.py      # for ML Zoomcamp
    python ingest/de/ingest_de.py      # for DE Zoomcamp
@@ -100,6 +104,8 @@ For more details, see [`slack_bot/README.md`](slack_bot/README.md).
 For more details, see [`ingest/local_development.md`](ingest/local_development.md).
 
 ## Environment Variables
+
+> ⚠️ **Security Note:** Never commit `.env` files or expose API keys in your code. Keep all credentials private and ensure `.env` is listed in your `.gitignore`.
 
 ### Required for Slack Bot
 - `SLACK_BOT_TOKEN` - Bot token for Slack app
@@ -134,6 +140,7 @@ For more details, see [`ingest/local_development.md`](ingest/local_development.m
 
 ## Technology Stack
 
+- **Programming Language**: Python 3.10
 - **LLM Framework**: LlamaIndex
 - **Vector Database**: Milvus (local), Zilliz Cloud (production)
 - **Embeddings**: HuggingFace BAAI/bge-base-en-v1.5

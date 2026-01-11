@@ -2,8 +2,8 @@ name: Scheduled ML Ingestion
 
 on:
   schedule:
-    # Run at 00:00 every day
-    - cron: '0 0 * * *'
+    # Run every Monday at 23:00 UTC
+    - cron: '0 23 * * 1'
   workflow_dispatch:
 
 jobs:

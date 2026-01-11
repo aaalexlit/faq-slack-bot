@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ingest.utils.index_utils import index_spreadsheet, index_github_repo, \
+from ingest.utils.index_utils import index_github_repo, \
     index_slack_history, index_faq, index_youtube
 
 DE_CHANNEL_ID = 'C01FABYF2RG'

@@ -3,29 +3,56 @@ name: Fly Deploy
 on:
   workflow_run:
     workflows: ["Docker Image CI"]
-    types:
-      - completed
+    types: [completed]
   workflow_dispatch:
     inputs:
       docker_tag:
-        description: 'Docker image tag to be deployed. by default `main`'
+        description: "Docker image tag to be deployed. by default `main`"
         required: false
-        default: 'main'
+        default: "main"
 
 jobs:
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
     steps:
       - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: |
-          if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            DOCKER_TAG="main"
-          else
-            DOCKER_TAG="${{ github.event.workflow_run.event.inputs.docker_tag || github.event.inputs.docker_tag }}"
-          fi
-          flyctl deploy --remote-only --image aaalexlit/faq-slack-bot:${DOCKER_TAG}
+
+      # Pin action (avoid @master surprises)
+      - uses: superfly/flyctl-actions/setup-flyctl@v1
+
+      - name: Deploy to Fly (with retry)
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "flyctl version:"
+          flyctl version || true
+
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            DOCKER_TAG="main"
+          else
+            DOCKER_TAG="${{ github.event.inputs.docker_tag }}"
+          fi
+
+          IMAGE="aaalexlit/faq-slack-bot:${DOCKER_TAG}"
+          APP="faq-slack-bot"
+
+          # Retry deploy because Fly registry mirror can intermittently 500
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt: deploying ${IMAGE} to ${APP}"
+            if flyctl deploy --app "$APP" --image "$IMAGE" --verbose; then
+              echo "Deploy succeeded"
+              exit 0
+            fi
+
+            sleep_seconds=$((attempt * 15))
+            echo "Deploy failed; sleeping ${sleep_seconds}s before retry..."
+            sleep "$sleep_seconds"
+          done
+
+          echo "Deploy failed after retries"
+          exit 1

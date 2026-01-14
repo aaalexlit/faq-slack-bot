@@ -18,7 +18,6 @@ from llama_index.readers.web import TrafilaturaWebReader
 from llama_index.vector_stores.milvus import MilvusVectorStore
 from upstash_redis import Redis
 
-from ingest.readers.custom_faq_gdoc_reader import FAQGoogleDocsReader
 from ingest.readers.slack_reader import SlackReader
 from ingest.readers.youtube_reader import YoutubeReader
 
@@ -188,16 +187,28 @@ def index_slack_history(channel_ids: list[str], collection_name: str):
     add_to_index(documents, collection_name=collection_name)
 
 
-def index_faq(document_ids: list[str], collection_name: str):
-    gdocs_reader = FAQGoogleDocsReader()
-    print('Starting to load FAQ document')
-    documents = gdocs_reader.load_data(document_ids=document_ids)
+def index_faq_github(collection_name: str):
+    """
+    Index FAQ documents from GitHub repository.
+
+    Reads FAQ markdown files from DataTalksClub/faq repository and indexes them
+    for the specified zoomcamp collection.
+
+    Args:
+        collection_name: Collection name (e.g., 'mlzoomcamp_faq_git')
+    """
+    from ingest.readers.faq_github_reader import FAQGithubReader, ZOOMCAMP_DIR_MAPPING
+
+    zoomcamp_name = ZOOMCAMP_DIR_MAPPING.get(collection_name)
+    if not zoomcamp_name:
+        raise ValueError(f"Unknown collection: {collection_name}")
+
+    github_reader = FAQGithubReader(github_token=os.getenv('GH_TOKEN'))
+    print(f'Starting to load FAQ documents from GitHub: {zoomcamp_name}')
+    documents = github_reader.load_data(zoomcamp_name=zoomcamp_name)
     add_route_to_docs(documents, 'faq')
-    print('Starting to add loaded FAQ document to the index')
-    add_to_index(documents,
-                 collection_name=collection_name,
-                 overwrite=True,
-                 )
+    print(f'Loaded {len(documents)} FAQ documents, adding to index')
+    add_to_index(documents, collection_name=collection_name, overwrite=True)
 
 
 def index_youtube(video_ids: list[str], collection_name: str):

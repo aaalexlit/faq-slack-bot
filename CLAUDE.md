@@ -30,9 +30,9 @@ The system consists of two main components:
 ### 2. Ingestion Pipeline (`ingest/`)
 - **Entry points**: Course-specific scripts in `ingest/{ml,de,mlops,llm}/ingest_*.py`
 - **Shared utilities**: `ingest/utils/index_utils.py`
-- **Custom readers**: `ingest/readers/` for Slack, Google Docs, YouTube
+- **Custom readers**: `ingest/readers/` for Slack, GitHub FAQs, YouTube
 - Indexes data from multiple sources:
-  - Google Docs (FAQ documents) via custom `FAQGoogleDocsReader`
+  - GitHub FAQs (markdown files with frontmatter) via custom `FAQGithubReader`
   - Slack history (90 days) via custom `SlackReader`
   - GitHub repositories (course repos) via `GithubRepositoryReader`
   - YouTube videos (subtitles) via custom `YoutubeReader`
@@ -156,7 +156,7 @@ See `get_retriever_query_engine()` in `slack_bot/main.py:418-458` for complete p
 ### Metadata and Source Attribution
 Source nodes include metadata for generating reference links:
 - **Slack**: `channel`, `thread_ts` → formatted as `https://datatalks-club.slack.com/archives/{channel}/p{thread_ts}`
-- **Google Docs**: `source` (URL), `title`, `section_name`
+- **GitHub FAQs**: `source` (URL), `question`, `module`, `id` → formatted as `https://datatalks.club/faq/{zoomcamp}.html#{id}`
 - **GitHub**: `owner`, `repo`, `branch`, `file_path` → formatted as GitHub blob URL
 - **YouTube**: `yt_link`, `yt_title`
 
@@ -185,5 +185,4 @@ Required for ingestion:
 - `GH_TOKEN` (for GitHub API access)
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (for embeddings cache)
 - `EMBEDDING_CACHE_NAMESPACE` (set per course)
-- `GOOGLE_APPLICATION_CREDENTIALS` (path to service account key for Google Docs)
 - `EXECUTION_ENV` (`local`, `zilliz-cluster`, or empty for production)

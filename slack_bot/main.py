@@ -284,13 +284,22 @@ def links_to_source_nodes(response):
             thread_ts_str = str(thread_ts).replace('.', '')
             link_template.format(channel_id, thread_ts_str)
             res.add(link_template.format(channel_id, thread_ts_str))
-        # Google doc
+        # Google doc or GitHub FAQ
         elif 'source' in node.metadata:
             title = node.metadata['title']
             if title == 'FAQ':
-                section_title = node.text.split('\n', 1)[0]
-                res.add(f"<{node.metadata['source']}|"
-                        f" {title}-{section_title}...> ")
+                # GitHub FAQ: use question and module from metadata
+                if 'question' in node.metadata:
+                    question = node.metadata['question']
+                    module = node.metadata.get('module', 'general')
+                    # Truncate long questions for display
+                    display_question = question[:50] + '...' if len(question) > 50 else question
+                    res.add(f"<{node.metadata['source']}| FAQ-{module}-{display_question}>")
+                else:
+                    # Fallback for any legacy Google Docs data
+                    section_title = node.text.split('\n', 1)[0]
+                    res.add(f"<{node.metadata['source']}|"
+                            f" {title}-{section_title}...> ")
             else:
                 res.add(f"<{node.metadata['source']}| {title}>")
         # GitHub
@@ -338,26 +347,26 @@ def get_greeting_message(channel_id):
                        "Please note that I'm under active development. " \
                        "The answers might not be accurate since I'm " \
                        "just a human-friendly interface to the " \
-                       "<https://docs.google.com/document/d/{link}| {name} Zoomcamp FAQ>" \
+                       "<https://datatalks.club/faq/{faq_path}| {name} Zoomcamp FAQ>" \
                        ", this Slack channel, and this course's <https://github.com/DataTalksClub/{repo}|GitHub repo>." \
                        "\nThanks for your request, I'm on it!"
     if channel_id in MLOPS_CHANNELS:
         name = 'MLOps'
-        link = '12TlBfhIiKtyBv8RnsoJR6F72bkPDGEvPOItJIxaEzE0/edit#heading=h.uwpp1jrsj0d'
+        faq_path = 'mlops-zoomcamp'
         repo = 'mlops-zoomcamp'
     elif channel_id in ML_CHANNELS:
         name = 'ML'
-        link = '1LpPanc33QJJ6BSsyxVg-pWNMplal84TdZtq10naIhD8/edit#heading=h.98qq6wfuzeck'
+        faq_path = 'machine-learning-zoomcamp'
         repo = 'machine-learning-zoomcamp'
     elif channel_id in LLM_CHANNELS:
         name = 'LLM'
-        link = '1m2KexowAXTmexfC5rVTCSnaShvdUQ8Ag2IEiwBDHxN0/edit#heading=h.o29af0z8xx88'
+        faq_path = 'llm-zoomcamp'
         repo = 'llm-zoomcamp'
     else:
         name = 'DE'
-        link = '19bnYs80DwuUimHM65UV3sylsCn2j1vziPOwzBwQrebw/edit#heading=h.o29af0z8xx88'
+        faq_path = 'data-engineering-zoomcamp'
         repo = 'data-engineering-zoomcamp'
-    return message_template.format(name=name, link=link, repo=repo)
+    return message_template.format(name=name, faq_path=faq_path, repo=repo)
 
 
 def log_to_langsmith():

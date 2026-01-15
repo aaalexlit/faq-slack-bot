@@ -1,8 +1,6 @@
 slack-sdk==3.30.0
 langchain==0.1.20
-google-api-python-client==2.134.0
-google-auth-httplib2==0.2.0
-google-auth-oauthlib==1.2.0
+python-frontmatter==1.0.0
 sentence-transformers==3.0.1
 GitPython==3.1.43
 pymilvus==2.4.4

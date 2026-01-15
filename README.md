@@ -30,7 +30,7 @@ The system consists of two main components:
 - Implements Cohere re-ranking to improve result relevance (20 retrieved → 10 after time-weighting → 4 after re-ranking)
 
 ### 2. Ingestion Pipeline (`ingest/`)
-- Indexes data from multiple sources: Google Docs (FAQs), Slack history, GitHub repos, YouTube subtitles
+- Indexes data from multiple sources: GitHub FAQs, Slack history, GitHub repos, YouTube subtitles
 - Uses embeddings cache (Upstash Redis) to reduce costs
 - Runs on schedule via GitHub Actions or can be triggered manually
 - Supports both local (Milvus) and production (Zilliz Cloud) vector stores
@@ -123,7 +123,6 @@ For more details, see [`ingest/local_development.md`](ingest/local_development.m
 - `GH_TOKEN` - GitHub personal access token for API access
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` - For embeddings cache
 - `EMBEDDING_CACHE_NAMESPACE` - Set per course to avoid cache collisions
-- `GOOGLE_APPLICATION_CREDENTIALS` - Path to service account key for Google Docs API
 - `EXECUTION_ENV` - Set to `local` for local dev, `zilliz-cluster` for MLOps/LLM production, or leave empty for ML/DE production
 
 ## Deployment

@@ -2,7 +2,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ingest.utils.index_utils import index_github_repo, \
-    index_slack_history, index_faq, index_youtube
+    index_slack_history, index_faq_github, index_youtube
 
 SLACK_CHANNEL_ID = 'C06TEGTGM3J'
 COLLECTION_NAME = 'llmzoomcamp'
@@ -21,11 +21,9 @@ def index_course_github_repo():
                       )
 
 
-def index_google_doc():
-    print("Indexing FAQ Google Document")
-    document_ids = ["1m2KexowAXTmexfC5rVTCSnaShvdUQ8Ag2IEiwBDHxN0"]
-    print('Loading google doc...')
-    index_faq(document_ids, COLLECTION_NAME)
+def index_github_faq():
+    print("Indexing FAQ from GitHub")
+    index_faq_github(COLLECTION_NAME)
 
 
 def index_slack_messages():
@@ -41,10 +39,10 @@ def index_yt_subtitles():
 def fill_llm_index():
     print("Updating LLM info Milvus index")
     print(f"Execution environment is {os.getenv('EXECUTION_ENV', 'local')}")
-    # 1) do the Google doc indexing first
-    index_google_doc()
+    # 1) do the GitHub FAQ indexing first
+    index_github_faq()
 
-    # 2) run the other in parallel
+    # 2) run the other tasks in parallel
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [
             executor.submit(index_slack_messages),

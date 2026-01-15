@@ -1,12 +1,14 @@
 FROM python:3.10-slim
 
-RUN apt-get update && \
-    apt-get install -y gcc python3-dev
-
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Python packages (all should have pre-built wheels)
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip cache purge && \
+    find /usr/local -type f -name '*.pyc' -delete && \
+    find /usr/local -type d -name '__pycache__' -delete
 
 COPY main.py ./
 

@@ -1,4 +1,5 @@
-"""GitHub FAQ reader."""
+"""GitHub FAQ reader.
+Migrated from Google Docs to GitHub. FAQ files are located in the _questions folder."""
 import os
 from typing import Optional
 
@@ -21,6 +22,7 @@ ZOOMCAMP_DIR_MAPPING = {
 class FAQGithubReader(BasePydanticReader):
     """
     Reader for GitHub-based FAQ markdown files from DataTalksClub/faq repository.
+    Migrated from Google Docs; FAQ files are in the _questions folder.
 
     Reads FAQ files with YAML frontmatter (id, question, sort_order) and creates
     LlamaIndex documents with appropriate metadata for the Slack bot.
